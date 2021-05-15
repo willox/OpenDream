@@ -16,6 +16,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Compiler\DM\DMAST.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Compiler\DM\DMLexer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Compiler\DM\DMParser.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Compiler\Location.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Compiler\Lexer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Compiler\Parser.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Compiler\DMPreprocessor\DMMacro.cs" />

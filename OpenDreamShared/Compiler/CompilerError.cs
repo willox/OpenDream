@@ -9,7 +9,7 @@
         }
 
         public override string ToString() {
-            return "Error at " + Token.SourceFile + ":" + Token.Line + ":" + Token.Column + ": " + Message;
+            return "Error at " + Token.Location + ": " + Message;
         }
     }
 
@@ -23,7 +23,7 @@
         }
 
         public override string ToString() {
-            return "Warning at " + Token.SourceFile + ":" + Token.Line + ":" + Token.Column + ": " + Message;
+            return "Warning at " + Token.Location + ": " + Message;
         }
     }
 }

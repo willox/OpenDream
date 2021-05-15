@@ -134,7 +134,7 @@ namespace OpenDreamShared.Compiler.DMPreprocessor {
                             expandedTokens.Reverse();
 
                             foreach (Token expandedToken in expandedTokens) {
-                                Token newToken = new Token(expandedToken.Type, expandedToken.Text, token.SourceFile, token.Line, token.Column, expandedToken.Value);
+                                Token newToken = new Token(expandedToken.Type, expandedToken.Text, token.Location, expandedToken.Value);
                                 
                                 _unprocessedTokens.Push(newToken);
                             }
@@ -193,7 +193,7 @@ namespace OpenDreamShared.Compiler.DMPreprocessor {
                         TokenType type = (token.Type == TokenType.DM_Preproc_Error) ? TokenType.Error : TokenType.Warning;
 
                         _isCurrentLineWhitespaceOnly = false;
-                        _currentLine.Add(new Token(type, token.Text, token.SourceFile, token.Line, token.Column, message));
+                        _currentLine.Add(new Token(type, token.Text, Location.Unknown, message));
                         break;
                     }
                     case TokenType.Newline: {

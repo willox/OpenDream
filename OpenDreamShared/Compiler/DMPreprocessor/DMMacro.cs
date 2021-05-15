@@ -53,7 +53,7 @@ namespace OpenDreamShared.Compiler.DMPreprocessor {
                             tokenTextBuilder.Append('"');
 
                             string tokenText = tokenTextBuilder.ToString();
-                            expandedTokens.Add(new Token(TokenType.DM_Preproc_ConstantString, tokenText, null, 0, 0, tokenText.Substring(1, tokenText.Length - 2)));
+                            expandedTokens.Add(new Token(TokenType.DM_Preproc_ConstantString, tokenText, Location.Unknown, tokenText.Substring(1, tokenText.Length - 2)));
                         } else {
                             foreach (Token parameterToken in parameter) {
                                 expandedTokens.Add(parameterToken);
@@ -65,7 +65,7 @@ namespace OpenDreamShared.Compiler.DMPreprocessor {
                                 expandedTokens.Add(parameterToken);
                             }
 
-                            expandedTokens.Add(new Token(TokenType.DM_Preproc_Punctuator_Comma, ",", null, 0, 0, null));
+                            expandedTokens.Add(new Token(TokenType.DM_Preproc_Punctuator_Comma, ",", Location.Unknown, null));
                         }
                     } else {
                         expandedTokens.Add(token);

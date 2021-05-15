@@ -453,9 +453,7 @@ namespace OpenDreamShared.Compiler.DM {
                 while (current.Type == TokenType.Newline) current = Advance();
             }
 
-            SourceName = current.SourceFile;
-            CurrentLine = current.Line;
-            CurrentColumn = current.Column;
+            CurrentLocation = current.Location;
             return current;
         }
 

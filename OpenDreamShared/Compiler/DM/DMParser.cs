@@ -1566,17 +1566,15 @@ namespace OpenDreamShared.Compiler.DM {
 
                                 string insideBracketsText = insideBrackets.ToString();
                                 if (insideBracketsText != String.Empty) {
-                                    DMPreprocessorLexer preprocLexer = new DMPreprocessorLexer(constantToken.SourceFile, insideBracketsText);
+                                    DMPreprocessorLexer preprocLexer = new DMPreprocessorLexer(constantToken.Location.SourceFile, insideBracketsText);
                                     List<Token> preprocTokens = new();
                                     Token preprocToken;
                                     while ((preprocToken = preprocLexer.GetNextToken()).Type != TokenType.EndOfFile) {
-                                        preprocToken.SourceFile = constantToken.SourceFile;
-                                        preprocToken.Line = constantToken.Line;
-                                        preprocToken.Column = constantToken.Column;
+                                        preprocToken.Location = constantToken.Location;
                                         preprocTokens.Add(preprocToken);
                                     }
 
-                                    DMLexer expressionLexer = new DMLexer(constantToken.SourceFile, preprocTokens);
+                                    DMLexer expressionLexer = new DMLexer(constantToken.Location.SourceFile, preprocTokens);
                                     DMParser expressionParser = new DMParser(expressionLexer);
 
                                     expressionParser.Whitespace(true);
