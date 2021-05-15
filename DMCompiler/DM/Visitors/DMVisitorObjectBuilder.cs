@@ -1,4 +1,5 @@
 ﻿using DMCompiler.Compiler.DM;
+using OpenDreamShared.Compiler;
 using OpenDreamShared.Compiler.DM;
 using OpenDreamShared.Dream;
 using System;
@@ -87,6 +88,7 @@ namespace DMCompiler.DM.Visitors {
         public void VisitProcDefinition(DMASTProcDefinition procDefinition) {
             string procName = procDefinition.Name;
             DMObject dmObject = _currentObject;
+            var loc = procDefinition.Location;
 
             if (procDefinition.ObjectPath.HasValue) {
                 dmObject = DMObjectTree.GetDMObject(_currentObject.Path.Combine(procDefinition.ObjectPath.Value));
@@ -96,17 +98,18 @@ namespace DMCompiler.DM.Visitors {
             
             dmObject.AddProc(procName, proc);
             if (procDefinition.IsVerb) {
-                DMASTPath procPath = new DMASTPath(new DreamPath(".proc/" + procName));
-                DMASTAppend verbAppend = new DMASTAppend(new DMASTIdentifier("verbs"), new DMASTConstantPath(procPath));
+                DMASTPath procPath = new DMASTPath(loc, new DreamPath(".proc/" + procName));
+                DMASTAppend verbAppend = new DMASTAppend(loc, new DMASTIdentifier(loc, "verbs"), new DMASTConstantPath(loc, procPath));
 
-                dmObject.InitializationProcStatements.Add(new DMASTProcStatementExpression(verbAppend));
+                dmObject.InitializationProcStatements.Add(new DMASTProcStatementExpression(loc, verbAppend));
             }
         }
 
         #region Values
         public void VisitNewPath(DMASTNewPath newPath) {
-            DMASTAssign assign = new DMASTAssign(new DMASTIdentifier(_currentVariable.Name), newPath);
-            DMASTProcStatementExpression statement = new DMASTProcStatementExpression(assign);
+            var loc = newPath.Location;
+            DMASTAssign assign = new DMASTAssign(loc, new DMASTIdentifier(loc, _currentVariable.Name), newPath);
+            DMASTProcStatementExpression statement = new DMASTProcStatementExpression(loc, assign);
 
             if (_currentVariable.IsGlobal) {
                 DMObjectTree.AddGlobalInitProcStatement(statement);
@@ -118,8 +121,9 @@ namespace DMCompiler.DM.Visitors {
         }
 
         public void VisitNewInferred(DMASTNewInferred newInferred) {
-            DMASTAssign assign = new DMASTAssign(new DMASTIdentifier(_currentVariable.Name), newInferred);
-            DMASTProcStatementExpression statement = new DMASTProcStatementExpression(assign);
+            var loc = newInferred.Location;
+            DMASTAssign assign = new DMASTAssign(loc, new DMASTIdentifier(loc, _currentVariable.Name), newInferred);
+            DMASTProcStatementExpression statement = new DMASTProcStatementExpression(loc, assign);
 
             if (_currentVariable.IsGlobal) {
                 DMObjectTree.AddGlobalInitProcStatement(statement);
@@ -131,8 +135,9 @@ namespace DMCompiler.DM.Visitors {
         }
 
         public void VisitList(DMASTList list) {
-            DMASTAssign assign = new DMASTAssign(new DMASTIdentifier(_currentVariable.Name), list);
-            DMASTProcStatementExpression statement = new DMASTProcStatementExpression(assign);
+            var loc = list.Location;
+            DMASTAssign assign = new DMASTAssign(loc, new DMASTIdentifier(loc, _currentVariable.Name), list);
+            DMASTProcStatementExpression statement = new DMASTProcStatementExpression(loc, assign);
 
             if (_currentVariable.IsGlobal) {
                 DMObjectTree.AddGlobalInitProcStatement(statement);
@@ -146,8 +151,9 @@ namespace DMCompiler.DM.Visitors {
         public void VisitStringFormat(DMASTStringFormat stringFormat) {
             if (!_currentVariable.IsGlobal) throw new Exception("Initial value of '" + _currentVariable.Name + "' cannot be a formatted string.");
 
-            DMASTAssign assign = new DMASTAssign(new DMASTIdentifier(_currentVariable.Name), stringFormat);
-            DMASTProcStatementExpression statement = new DMASTProcStatementExpression(assign);
+            var loc = stringFormat.Location;
+            DMASTAssign assign = new DMASTAssign(loc, new DMASTIdentifier(loc, _currentVariable.Name), stringFormat);
+            DMASTProcStatementExpression statement = new DMASTProcStatementExpression(loc, assign);
             DMObjectTree.AddGlobalInitProcStatement(statement);
 
             _valueStack.Push(null);
@@ -156,8 +162,9 @@ namespace DMCompiler.DM.Visitors {
         public void VisitProcCall(DMASTProcCall procCall) {
             if (!_currentVariable.IsGlobal) throw new Exception("Initial value of '" + _currentVariable.Name + "' cannot be a proc call.");
 
-            DMASTAssign assign = new DMASTAssign(new DMASTIdentifier(_currentVariable.Name), procCall);
-            DMASTProcStatementExpression statement = new DMASTProcStatementExpression(assign);
+            var loc = procCall.Location;
+            DMASTAssign assign = new DMASTAssign(loc, new DMASTIdentifier(loc, _currentVariable.Name), procCall);
+            DMASTProcStatementExpression statement = new DMASTProcStatementExpression(loc, assign);
             DMObjectTree.AddGlobalInitProcStatement(statement);
 
             _valueStack.Push(null);

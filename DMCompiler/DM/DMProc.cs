@@ -1,4 +1,5 @@
 ﻿using DMCompiler.DM.Visitors;
+using OpenDreamShared.Compiler;
 using OpenDreamShared.Compiler.DM;
 using OpenDreamShared.Dream;
 using OpenDreamShared.Dream.Procs;
@@ -511,6 +512,13 @@ namespace DMCompiler.DM {
 
         public void Locate() {
             WriteOpcode(DreamProcOpcode.Locate);
+        }
+
+        public void DebugStatement(Location loc) {
+            WriteOpcode(DreamProcOpcode.DebugStatement);
+            WriteString(loc.SourceFile);
+            WriteInt(loc.Line ?? -1);
+            WriteInt(loc.Column ?? -1);
         }
 
         private void WriteOpcode(DreamProcOpcode opcode) {

@@ -1282,5 +1282,15 @@ namespace OpenDreamServer.Dream.Procs {
             }
         }
         #endregion Helpers
+
+        #region Debug Symbols
+        public static void DebugStatement(DreamProcInterpreter interpreter) {
+            string sourceFile = interpreter.ReadString();
+            int line = interpreter.ReadInt();
+            int column = interpreter.ReadInt();
+
+            Console.WriteLine($"Executing {sourceFile}:{line}:{column}");
+        }
+        #endregion
     }
 }

@@ -47,6 +47,7 @@ namespace DMCompiler.DM.Visitors {
 
         public void VisitProcBlockInner(DMASTProcBlockInner block) {
             foreach (DMASTProcStatement statement in block.Statements) {
+                _proc.DebugStatement(statement.Location);
                 statement.Visit(this);
             }
         }

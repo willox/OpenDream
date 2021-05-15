@@ -88,7 +88,8 @@ namespace OpenDreamServer.Dream.Procs {
             DreamProcInterpreterOpcodes.LocateCoord,
             DreamProcInterpreterOpcodes.Locate,
             DreamProcInterpreterOpcodes.IsNull,
-            DreamProcInterpreterOpcodes.Spawn
+            DreamProcInterpreterOpcodes.Spawn,
+            DreamProcInterpreterOpcodes.DebugStatement
         };
 
         public DreamProc SelfProc;

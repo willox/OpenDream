@@ -6,15 +6,15 @@ namespace OpenDreamShared.Compiler
 	{
 		public static readonly Location Unknown = new Location();
 
-		public Location(string filePath, uint? line, uint? column) {
+		public Location(string filePath, int? line, int? column) {
 			SourceFile = filePath;
 			Line = line;
 			Column = column;
 		}
 
 		public readonly string SourceFile { get; }
-		public readonly uint? Line { get; }
-		public readonly uint? Column { get; }
+		public readonly int? Line { get; }
+		public readonly int? Column { get; }
 
         public override string ToString() {
 			var builder = new StringBuilder(SourceFile ?? "<unknown>");
