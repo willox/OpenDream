@@ -5,6 +5,10 @@
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.Shared.VsCodeDebugProtocol" Version="16.9.50204.1" />
+  </ItemGroup>
+
   <Import Project="..\OpenDreamShared\OpenDreamShared.projitems" Label="Shared" />
 
 </Project>

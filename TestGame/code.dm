@@ -36,6 +36,14 @@
 	    var/hash = md5(ckey)
 	    usr << "The md5 hash of your ckey is: [hash]"
 
+var/static/test = 0
+
 /world/New()
 	..()
-	world.log << "World loaded!"
+
+	for (var/i in 1 to 8)
+		spawn(1)
+			while(1)
+				test = test + 1
+				world.log << test
+				sleep(2)

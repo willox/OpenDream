@@ -14,6 +14,7 @@ using OpenDreamShared.Net.Packets;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net.Sockets;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -35,6 +36,8 @@ namespace OpenDreamServer {
         private static InterfaceDescriptor _clientInterface = null;
 
         static void Main(string[] args) {
+            // DebugAdapter.DebugAdapter.Instance = new DebugAdapter.DebugAdapter();
+
             if (args.Length < 1 || Path.GetExtension(args[0]) != ".json") {
                 Console.WriteLine("You must compile your game using DMCompiler, and supply its output as an argument");
 

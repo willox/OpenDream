@@ -1289,7 +1289,7 @@ namespace OpenDreamServer.Dream.Procs {
             int line = interpreter.ReadInt();
             int column = interpreter.ReadInt();
 
-            Console.WriteLine($"Executing {sourceFile}:{line}:{column}");
+            // Console.WriteLine($"Executing {sourceFile}:{line}:{column}");
         }
         #endregion
     }
