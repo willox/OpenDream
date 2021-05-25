@@ -85,3 +85,25 @@
 
 /world/proc/call_test()
 	return call(src, "call_target")()
+
+/datum/recursive
+	var/datum/recursive/inner
+
+	proc/get_inner()
+		. = inner
+
+/world/proc/conditional_access_test()
+	var/datum/recursive/R = new()
+	return R?.inner?.inner
+
+/world/proc/conditional_access_test_error()
+	var/datum/recursive/R = new()
+	return R?.inner.inner
+
+/world/proc/conditional_call_test()
+	var/datum/recursive/R = new()
+	return R?.inner?.get_inner()
+ 
+/world/proc/conditional_call_test_error()
+ 	var/datum/recursive/R = new()
+ 	return R?.inner.get_inner()
