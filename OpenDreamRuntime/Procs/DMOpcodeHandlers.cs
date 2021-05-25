@@ -88,7 +88,7 @@ namespace OpenDreamRuntime.Procs {
             string identifierName = state.ReadString();
 
             if (operand == DreamValue.Null) {
-                state.Push(DreamValue.Null);
+                state.Push(new DreamProcIdentifierNull());
                 return null;
             }
 
@@ -116,7 +116,7 @@ namespace OpenDreamRuntime.Procs {
             string identifierName = state.ReadString();
 
             if (operand == DreamValue.Null) {
-                state.Push(new DreamProcIdentifierNullProc());
+                state.Push(new DreamProcIdentifierNull());
                 return null;
             }
 
@@ -1015,11 +1015,11 @@ namespace OpenDreamRuntime.Procs {
             return null;
         }
 
-        public static ProcStatus? JumpIfNullProc(DMProcState state) {
+        public static ProcStatus? JumpIfNullIdentifier(DMProcState state) {
             int position = state.ReadInt();
 
             var proc = state.PeekIdentifier();
-            if (proc is DreamProcIdentifierNullProc) {
+            if (proc is DreamProcIdentifierNull) {
                 state.Jump(position);
             }
 
