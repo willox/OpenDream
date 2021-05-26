@@ -88,6 +88,7 @@
 
 /datum/recursive
 	var/datum/recursive/inner
+	var/val = 2
 
 	proc/get_inner()
 		. = inner
@@ -109,3 +110,13 @@
 /world/proc/conditional_call_test_error()
  	var/datum/recursive/R = new()
  	return R?.inner.get_inner()
+
+/world/proc/conditional_mutate()
+	var/datum/recursive/R = null
+	R?.val *= CRASH("this shouldn't be evaluated")
+	R = new()
+	return R?.val *= 2
+
+/world/proc/list_index_mutate()
+	var/list/L = list(1, 2, 3)
+	return L[2] *= 15
