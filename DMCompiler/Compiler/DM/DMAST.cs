@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using System.Xml.Schema;
+using DMCompiler.DM;
 using OpenDreamShared.Compiler;
 using OpenDreamShared.Dream;
 using OpenDreamShared.Dream.Procs;
@@ -66,6 +69,7 @@ namespace DMCompiler.Compiler.DM {
         public void VisitAssign(DMASTAssign assign) { throw new NotImplementedException(); }
         public void VisitVarDeclExpression(DMASTVarDeclExpression vardecl) { throw new NotImplementedException(); }
         public void VisitNewPath(DMASTNewPath newPath) { throw new NotImplementedException(); }
+        public void VisitNewExpr(DMASTNewExpr newExpr) { throw new NotImplementedException(); }
         public void VisitNewIdentifier(DMASTNewIdentifier newIdentifier) { throw new NotImplementedException(); }
         public void VisitNewDereference(DMASTNewDereference newDereference) { throw new NotImplementedException(); }
         public void VisitNewListIndex(DMASTNewListIndex newListIndex) { throw new NotImplementedException(); }
@@ -119,6 +123,7 @@ namespace DMCompiler.Compiler.DM {
         public void VisitProcCall(DMASTProcCall procCall) { throw new NotImplementedException(); }
         public void VisitCallParameter(DMASTCallParameter callParameter) { throw new NotImplementedException(); }
         public void VisitDefinitionParameter(DMASTDefinitionParameter definitionParameter) { throw new NotImplementedException(); }
+        public void VisitDeref(DMASTDeref deref) { throw new NotImplementedException(); }
         public void VisitDereference(DMASTDereference dereference) { throw new NotImplementedException(); }
         public void VisitDereferenceProc(DMASTDereferenceProc dereferenceProc) { throw new NotImplementedException(); }
         public void VisitCallableProcIdentifier(DMASTCallableProcIdentifier procIdentifier) { throw new NotImplementedException(); }
@@ -1045,6 +1050,19 @@ namespace DMCompiler.Compiler.DM {
         }
     }
 
+    public class DMASTNewExpr : DMASTExpression {
+        public DMASTExpression Expression;
+        public DMASTCallParameter[] Parameters;
+        public DMASTNewExpr(Location location, DMASTExpression expression, DMASTCallParameter[] parameters) : base(location) {
+            Expression = expression;
+            Parameters = parameters;
+        }
+
+        public override void Visit(DMASTVisitor visitor) {
+            visitor.VisitNewExpr(this);
+        }
+    }
+
     public class DMASTNewIdentifier : DMASTExpression {
         public DMASTIdentifier Identifier;
         public DMASTCallParameter[] Parameters;
@@ -1817,6 +1835,51 @@ namespace DMCompiler.Compiler.DM {
 
         public override void Visit(DMASTVisitor visitor) {
             visitor.VisitDefinitionParameter(this);
+        }
+    }
+
+
+
+    public class DMASTDeref : DMASTExpression {
+        public enum OperationKind {
+            Invalid,
+
+            Field, // x.y
+            FieldSafe, // x?.y
+            FieldSearch, // x:y
+            FieldSafeSearch, // x?:y
+
+            Index, // x[y]
+            IndexSafe, // x?[y]
+
+            Call, // x.y()
+            CallSafe, // x?.y()
+            CallSearch, // x:y()
+            CallSafeSearch, // x?:y()
+        }
+
+        public struct Operation {
+            public OperationKind Kind;
+
+            // Field*, Call*
+            public DMASTIdentifier Identifier;
+
+            // Index*
+            public DMASTExpression Index;
+
+            // Call*
+            public DMASTCallParameter[] Parameters;
+        }
+
+        public DMASTExpression Expression;
+        public Operation[] Operations;
+
+        public DMASTDeref(Location location, DMASTExpression expression, Operation[] operations) : base(location) {
+            Expression = expression;
+            Operations = operations;
+        }
+        public override void Visit(DMASTVisitor visitor) {
+            visitor.VisitDeref(this);
         }
     }
 

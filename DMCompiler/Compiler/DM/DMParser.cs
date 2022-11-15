@@ -9,6 +9,8 @@ using OpenDreamShared.Dream;
 using DereferenceType = DMCompiler.Compiler.DM.DMASTDereference.DereferenceType;
 using OpenDreamShared.Dream.Procs;
 using String = System.String;
+using System.Net.Http.Headers;
+using System.Runtime.CompilerServices;
 
 namespace DMCompiler.Compiler.DM {
     public partial class DMParser : Parser<Token> {
@@ -72,6 +74,18 @@ namespace DMCompiler.Compiler.DM {
             TokenType.DM_Modulus,
             TokenType.DM_ModulusModulus
 
+        };
+
+        private static readonly TokenType[] DerefTypes = {
+            TokenType.DM_Period,
+            TokenType.DM_Colon,
+            TokenType.DM_QuestionPeriod,
+            TokenType.DM_QuestionColon,
+            TokenType.DM_QuestionLeftBracket,
+        };
+
+        private static readonly TokenType[] WhitespacedDerefTypes = {
+            TokenType.DM_LeftBracket,
         };
 
         private static readonly TokenType[] DereferenceTypes = {
@@ -1917,17 +1931,12 @@ namespace DMCompiler.Compiler.DM {
                 type = ParseDereference(type, allowCalls: false);
                 DMASTCallParameter[] parameters = ProcCall();
 
-                //TODO: These don't need to be separate types
                 DMASTExpression newExpression = type switch {
-                    DMASTListIndex listIdx => new DMASTNewListIndex(loc, listIdx, parameters),
-                    DMASTDereference deref => new DMASTNewDereference(loc, deref, parameters),
-                    DMASTIdentifier identifier => new DMASTNewIdentifier(loc, identifier, parameters),
                     DMASTConstantPath path => new DMASTNewPath(loc, path.Value, parameters),
+                    DMASTExpression expr => new DMASTNewExpr(loc, expr, parameters),
                     null => new DMASTNewInferred(loc, parameters),
-                    _ => null
                 };
 
-                if (newExpression == null) Error("Invalid type");
                 newExpression = ParseDereference(newExpression);
                 return newExpression;
             }
@@ -2044,6 +2053,7 @@ namespace DMCompiler.Compiler.DM {
         }
 
         private DMASTExpression ParseDereference(DMASTExpression expression, bool allowCalls = true) {
+#if false
             if (expression != null) {
                 while (true) {
                     Token token = Current();
@@ -2111,6 +2121,163 @@ namespace DMCompiler.Compiler.DM {
             }
 
             return expression;
+#else
+            // Try to parse a call first
+            // Belongs in its own function :/
+            if (allowCalls) {
+                expression = ParseProcCall(expression);
+            }
+
+            if (expression != null) {
+                List<DMASTDeref.Operation> operations = new();
+
+                while (true) {
+                    Token token = Current();
+
+                    // Check for a valid deref operation token
+                    {
+#if true
+                        SavePosition();
+
+                        if (!Check(DerefTypes)) {
+                            Whitespace();
+
+                            token = Current();
+
+                            if (!Check(WhitespacedDerefTypes)) {
+                                RestorePosition();
+                                break;
+                            }
+                        }
+
+                        AcceptPosition();
+#else
+                        if (!Check(DerefTypes)) {
+                            break;
+                        }
+#endif
+                    }
+
+                    // Cancel this operation chain (and potentially fall back to ternary behaviour) if this looks more like part of a ternary expression than a deref
+                    if (token.Type == TokenType.DM_Colon) {
+                        bool invalidDeref = (expression is DMASTExpressionConstant);
+
+                        if (!invalidDeref) {
+                            Token innerToken = Current();
+
+                            if (Check(IdentifierTypes)) {
+                                ReuseToken(innerToken);
+                            } else {
+                                invalidDeref = true;
+                            }
+                        }
+
+                        if (invalidDeref) {
+                            ReuseToken(token);
+                            break;
+                        }
+                    }
+
+                    DMASTDeref.Operation operation = new() {
+                        Kind = DMASTDeref.OperationKind.Invalid,
+                    };
+
+                    switch (token.Type) {
+                        case TokenType.DM_Period:
+                        case TokenType.DM_QuestionPeriod:
+                        case TokenType.DM_Colon:
+                        case TokenType.DM_QuestionColon: {
+                                bool conditional = (token.Type == TokenType.DM_QuestionPeriod || token.Type == TokenType.DM_QuestionColon);
+
+                                DMASTIdentifier identifier = Identifier();
+
+                                operation.Kind = token.Type switch {
+                                    TokenType.DM_Period => DMASTDeref.OperationKind.Field,
+                                    TokenType.DM_QuestionPeriod => DMASTDeref.OperationKind.FieldSafe,
+                                    TokenType.DM_Colon => DMASTDeref.OperationKind.FieldSearch,
+                                    TokenType.DM_QuestionColon => DMASTDeref.OperationKind.FieldSafeSearch,
+                                };
+
+                                operation.Identifier = identifier;
+                            }
+                            break;
+                        
+                        case TokenType.DM_LeftBracket:
+                        case TokenType.DM_QuestionLeftBracket: {
+                                bool conditional = (token.Type == TokenType.DM_QuestionLeftBracket);
+
+                                Whitespace();
+                                DMASTExpression index = Expression();
+                                ConsumeRightBracket();
+
+                                operation.Kind = conditional ? DMASTDeref.OperationKind.IndexSafe : DMASTDeref.OperationKind.Index;
+                                operation.Index = index;
+                            }
+                            break;
+
+                        default:
+                            throw new InvalidOperationException("unhandled dereference token");
+                    }
+
+                    // Attempt to upgrade this operation to a call
+                    if (allowCalls) {
+                        SavePosition();
+                        Whitespace();
+
+                        DMASTCallParameter[] parameters = ProcCall();
+
+                        if (parameters != null) {
+                            AcceptPosition();
+
+                            switch (operation.Kind) {
+                                case DMASTDeref.OperationKind.Field:
+                                    operation.Kind = DMASTDeref.OperationKind.Call;
+                                    operation.Parameters = parameters;
+                                    break;
+
+                                case DMASTDeref.OperationKind.FieldSafe:
+                                    operation.Kind = DMASTDeref.OperationKind.CallSafe;
+                                    operation.Parameters = parameters;
+                                    break;
+
+                                case DMASTDeref.OperationKind.FieldSearch:
+                                    operation.Kind = DMASTDeref.OperationKind.CallSearch;
+                                    operation.Parameters = parameters;
+                                    break;
+
+                                case DMASTDeref.OperationKind.FieldSafeSearch:
+                                    operation.Kind = DMASTDeref.OperationKind.CallSafeSearch;
+                                    operation.Parameters = parameters;
+                                    break;
+
+                                case DMASTDeref.OperationKind.Index:
+                                case DMASTDeref.OperationKind.IndexSafe:
+                                    Error("attempt to call an invalid l-value");
+                                    return null;
+
+                                case DMASTDeref.OperationKind.Call:
+                                case DMASTDeref.OperationKind.CallSafe:
+                                default:
+                                    throw new InvalidOperationException("unhandled dereference operation kind");
+                            }
+
+                        } else {
+                            RestorePosition();
+                        }
+                    }
+
+                    operations.Add(operation);
+                }
+
+                if (operations.Any()) {
+                    Whitespace();
+                    return new DMASTDeref(expression.Location, expression, operations.ToArray());
+                }
+            }
+
+            Whitespace();
+            return expression;
+#endif
         }
 
         private DMASTExpression ParseProcCall(DMASTExpression expression) {

@@ -34,7 +34,7 @@ namespace DMCompiler.DM.Expressions {
             : base(location, null)
         {
             _expr = expr;
-            _conditional = conditional;
+            _conditional = conditional || _expr.Conditional;
             PropertyName = propertyName;
             _path = path;
         }
@@ -75,6 +75,8 @@ namespace DMCompiler.DM.Expressions {
             constant = null;
             return false;
         }
+
+        public override bool Conditional => _conditional;
     }
 
     // x.y.z()
@@ -86,7 +88,7 @@ namespace DMCompiler.DM.Expressions {
 
         public DereferenceProc(Location location, DMExpression expr, DMASTDereferenceProc astNode) : base(location) {
             _expr = expr;
-            _conditional = astNode.Conditional;
+            _conditional = astNode.Conditional || _expr.Conditional;
             _field = astNode.Property;
 
             if (astNode.Type == DMASTDereference.DereferenceType.Direct) {
@@ -120,6 +122,8 @@ namespace DMCompiler.DM.Expressions {
             var procId = dmObject.GetProcs(_field)?[^1];
             return (dmObject, procId is null ? null : DMObjectTree.AllProcs[procId.Value]);
         }
+
+        public override bool Conditional => _conditional;
     }
 
     // x[y]
@@ -133,7 +137,7 @@ namespace DMCompiler.DM.Expressions {
         {
             _expr = expr;
             _index = index;
-            _conditional = conditional;
+            _conditional = conditional || _expr.Conditional;
         }
 
         public override (DMReference Reference, bool Conditional) EmitReference(DMObject dmObject, DMProc proc) {
@@ -165,5 +169,7 @@ namespace DMCompiler.DM.Expressions {
 
             return true;
         }
+
+        public override bool Conditional => _conditional;
     }
 }

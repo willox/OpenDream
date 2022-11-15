@@ -436,6 +436,10 @@ namespace DMCompiler.DM.Visitors {
             Result = new Expressions.ListIndex(listIndex.Location, expr, index, expr.Path, listIndex.Conditional);
         }
 
+        public void VisitDeref(DMASTDeref deref) {
+            Result = new Expressions.Src(deref.Location, DreamPath.List);
+        }
+
         public void VisitDereference(DMASTDereference dereference) {
             var expr = DMExpression.Create(_dmObject, _proc, dereference.Expression, _inferredPath);
 
@@ -478,6 +482,12 @@ namespace DMCompiler.DM.Visitors {
         public void VisitNewPath(DMASTNewPath newPath) {
             var args = new ArgumentList(newPath.Location, _dmObject, _proc, newPath.Parameters, _inferredPath);
             Result = new Expressions.NewPath(newPath.Location, newPath.Path.Path, args);
+        }
+
+        public void VisitNewExpr(DMASTNewExpr newExpr) {
+            var expr = DMExpression.Create(_dmObject, _proc, newExpr.Expression, _inferredPath);
+            var args = new ArgumentList(newExpr.Location, _dmObject, _proc, newExpr.Parameters, _inferredPath);
+            Result = new Expressions.New(newExpr.Location, expr, args);
         }
 
         public void VisitNewInferred(DMASTNewInferred newInferred) {

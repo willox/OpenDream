@@ -70,6 +70,8 @@ namespace DMCompiler.DM {
         }
 
         public virtual DreamPath? Path => null;
+
+        public virtual bool Conditional => false;
     }
 
     // (a, b, c, ...)
