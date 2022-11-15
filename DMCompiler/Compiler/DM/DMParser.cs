@@ -2202,7 +2202,6 @@ namespace DMCompiler.Compiler.DM {
 
             Whitespace();
             return expression;
-#endif
         }
 
         private DMASTExpression ParseProcCall(DMASTExpression expression) {
