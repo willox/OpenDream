@@ -1,0 +1,7 @@
+﻿/proc/RunTest()
+	var/list/L = list(1, 2, 3)
+	L.Cut()
+	CRASH("Len = [L.len]")
+	ASSERT(L.len == 2)
+	ASSERT(L[1] == 1)
+	ASSERT(L[2] == 3)
