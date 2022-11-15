@@ -2053,75 +2053,6 @@ namespace DMCompiler.Compiler.DM {
         }
 
         private DMASTExpression ParseDereference(DMASTExpression expression, bool allowCalls = true) {
-#if false
-            if (expression != null) {
-                while (true) {
-                    Token token = Current();
-
-                    if (Check(DereferenceTypes)) {
-                        bool invalidDeref = (expression is DMASTExpressionConstant && token.Type == TokenType.DM_Colon);
-                        DMASTIdentifier property = null;
-                        if (!invalidDeref) {
-                            property = Identifier();
-                            if (property == null) {
-                                if (token.Type == TokenType.DM_Colon) {
-                                    invalidDeref = true;
-                                } else {
-                                    Error("Expected an identifier to dereference");
-                                }
-                            }
-                        }
-
-                        if (invalidDeref) {
-                            //Not a valid dereference, but could still be a part of a ternary, so abort
-                            ReuseToken(token);
-                            break;
-                        }
-
-                        (DereferenceType type, bool conditional) = token.Type switch {
-                            TokenType.DM_Period => (DereferenceType.Direct, false),
-                            TokenType.DM_QuestionPeriod => (DereferenceType.Direct, true),
-                            TokenType.DM_QuestionColon => (DereferenceType.Search, true),
-                            TokenType.DM_Colon => (DereferenceType.Search, false),
-                            _ => throw new InvalidOperationException($"Invalid dereference token {token}")
-                        };
-
-                        if (expression is DMASTIdentifier ident && ident.Identifier == "global" && conditional == false) { // global.x
-                            expression = new DMASTGlobalIdentifier(expression.Location, property.Identifier);
-                        } else {
-                            expression = new DMASTDereference(expression.Location, expression, property.Identifier, type, conditional);
-                        }
-                    } else {
-                        break;
-                    }
-                }
-
-                if (allowCalls) {
-                    DMASTExpression procCall = ParseProcCall(expression);
-
-                    if (procCall != expression) { //Successfully parsed a proc call
-                        expression = procCall;
-                        expression = ParseDereference(expression);
-                    }
-                }
-
-                Whitespace();
-                Token indexToken = Current();
-                if (Check(TokenType.DM_LeftBracket) || Check(TokenType.DM_QuestionLeftBracket)) {
-                    bool conditional = indexToken.Type == TokenType.DM_QuestionLeftBracket;
-
-                    Whitespace();
-                    DMASTExpression index = Expression();
-                    ConsumeRightBracket();
-
-                    expression = new DMASTListIndex(expression.Location, expression, index, conditional);
-                    expression = ParseDereference(expression);
-                    Whitespace();
-                }
-            }
-
-            return expression;
-#else
             // Try to parse a call first
             // Belongs in its own function :/
             if (allowCalls) {
@@ -2136,7 +2067,6 @@ namespace DMCompiler.Compiler.DM {
 
                     // Check for a valid deref operation token
                     {
-#if true
                         SavePosition();
 
                         if (!Check(DerefTypes)) {
@@ -2151,11 +2081,6 @@ namespace DMCompiler.Compiler.DM {
                         }
 
                         AcceptPosition();
-#else
-                        if (!Check(DerefTypes)) {
-                            break;
-                        }
-#endif
                     }
 
                     // Cancel this operation chain (and potentially fall back to ternary behaviour) if this looks more like part of a ternary expression than a deref
