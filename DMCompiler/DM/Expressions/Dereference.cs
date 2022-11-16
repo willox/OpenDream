@@ -4,6 +4,37 @@ using OpenDreamShared.Dream;
 using OpenDreamShared.Dream.Procs;
 
 namespace DMCompiler.DM.Expressions {
+    class Deref : LValue {
+        public struct Operation {
+            public DMASTDeref.OperationKind Kind;
+
+            // Field*, Call*
+            public string Identifier;
+
+            // Field*
+            public int? GlobalId;
+
+            // Index*
+            public DMExpression Index;
+
+            // Call*
+            public ArgumentList Parameters;
+        }
+
+        DMExpression _expression;
+        Operation[] _operations;
+
+        public override DreamPath? Path => _path;
+        DreamPath? _path;
+
+        public Deref(Location location, DreamPath? path, DMExpression expression, Operation[] operations)
+            : base(location, null) {
+            _expression = expression;
+            _operations = operations;
+            _path = path;
+        }
+    }
+
     // x.y.z
     class Dereference : LValue {
         // Kind of a lazy port

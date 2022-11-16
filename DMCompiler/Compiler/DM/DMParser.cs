@@ -2067,7 +2067,7 @@ namespace DMCompiler.Compiler.DM {
 
                     // Check for a valid deref operation token
                     {
-                        SavePosition();
+                        // SavePosition();
 
                         if (!Check(DerefTypes)) {
                             Whitespace();
@@ -2075,12 +2075,12 @@ namespace DMCompiler.Compiler.DM {
                             token = Current();
 
                             if (!Check(WhitespacedDerefTypes)) {
-                                RestorePosition();
+                                // RestorePosition();
                                 break;
                             }
                         }
 
-                        AcceptPosition();
+                        // AcceptPosition();
                     }
 
                     // Cancel this operation chain (and potentially fall back to ternary behaviour) if this looks more like part of a ternary expression than a deref
@@ -2112,8 +2112,6 @@ namespace DMCompiler.Compiler.DM {
                         case TokenType.DM_QuestionPeriod:
                         case TokenType.DM_Colon:
                         case TokenType.DM_QuestionColon: {
-                                bool conditional = (token.Type == TokenType.DM_QuestionPeriod || token.Type == TokenType.DM_QuestionColon);
-
                                 DMASTIdentifier identifier = Identifier();
 
                                 operation.Kind = token.Type switch {
@@ -2129,13 +2127,15 @@ namespace DMCompiler.Compiler.DM {
                         
                         case TokenType.DM_LeftBracket:
                         case TokenType.DM_QuestionLeftBracket: {
-                                bool conditional = (token.Type == TokenType.DM_QuestionLeftBracket);
-
                                 Whitespace();
                                 DMASTExpression index = Expression();
                                 ConsumeRightBracket();
 
-                                operation.Kind = conditional ? DMASTDeref.OperationKind.IndexSafe : DMASTDeref.OperationKind.Index;
+                                operation.Kind = token.Type switch {
+                                    TokenType.DM_LeftBracket => DMASTDeref.OperationKind.Index,
+                                    TokenType.DM_QuestionLeftBracket => DMASTDeref.OperationKind.IndexSafe,
+                                };
+
                                 operation.Index = index;
                             }
                             break;
@@ -2146,13 +2146,13 @@ namespace DMCompiler.Compiler.DM {
 
                     // Attempt to upgrade this operation to a call
                     if (allowCalls) {
-                        SavePosition();
+                        // SavePosition();
                         Whitespace();
 
                         DMASTCallParameter[] parameters = ProcCall();
 
                         if (parameters != null) {
-                            AcceptPosition();
+                            // AcceptPosition();
 
                             switch (operation.Kind) {
                                 case DMASTDeref.OperationKind.Field:
@@ -2187,7 +2187,7 @@ namespace DMCompiler.Compiler.DM {
                             }
 
                         } else {
-                            RestorePosition();
+                            // RestorePosition();
                         }
                     }
 
