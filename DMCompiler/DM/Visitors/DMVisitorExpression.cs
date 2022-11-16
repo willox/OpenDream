@@ -6,6 +6,7 @@ using OpenDreamShared.Dream;
 using OpenDreamShared.Dream.Procs;
 using System.Linq;
 using System.Xml.Linq;
+using Microsoft.Extensions.ObjectPool;
 
 namespace DMCompiler.DM.Visitors {
     sealed class DMVisitorExpression : DMASTVisitor {
@@ -502,13 +503,9 @@ namespace DMCompiler.DM.Visitors {
 
                             // Special behaviour for global accesses
                             if (i == 0 && expr is Expressions.Global) {
-                                var globalId = _dmObject.GetGlobalVariableId(field);
-
-                                if (globalId != null) {
-                                    property = DMObjectTree.Globals[globalId.Value];
-
+                                if (field == "vars") {
                                     // This is some crazy shit
-                                    expr = new GlobalField(expr.Location, property.Type, globalId.Value);
+                                    expr = new GlobalVars(expr.Location);
 
                                     var newOperationCount = operations.Length - i - 1;
 
@@ -520,8 +517,32 @@ namespace DMCompiler.DM.Visitors {
                                     operations = new Deref.Operation[newOperationCount];
                                     astOperationOffset = i + 1;
                                     i = -1;
+
+                                    prevPath = null;
+                                    pathIsFuzzy = true;
+                                    continue;
                                 } else {
-                                    throw new CompileErrorException(deref.Location, $"Invalid property global.{field}");
+                                    var globalId = _dmObject.GetGlobalVariableId(field);
+
+                                    if (globalId != null) {
+                                        property = DMObjectTree.Globals[globalId.Value];
+
+                                        // This is some crazy shit
+                                        expr = new GlobalField(expr.Location, property.Type, globalId.Value);
+
+                                        var newOperationCount = operations.Length - i - 1;
+
+                                        if (newOperationCount == 0) {
+                                            Result = expr;
+                                            return;
+                                        }
+
+                                        operations = new Deref.Operation[newOperationCount];
+                                        astOperationOffset = i + 1;
+                                        i = -1;
+                                    } else {
+                                        throw new CompileErrorException(deref.Location, $"Invalid property global.{field}");
+                                    }
                                 }
                             }
 
