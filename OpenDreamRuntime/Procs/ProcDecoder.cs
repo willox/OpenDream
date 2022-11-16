@@ -83,6 +83,8 @@ public struct ProcDecoder {
             case DreamProcOpcode.IsSaved:
             case DreamProcOpcode.PushPath:
             case DreamProcOpcode.DebugSource:
+            case DreamProcOpcode.DereferenceField:
+            case DreamProcOpcode.DereferenceCall:
                 return (opcode, ReadString());
 
             case DreamProcOpcode.Prompt:
@@ -126,6 +128,9 @@ public struct ProcDecoder {
             case DreamProcOpcode.PushType:
             case DreamProcOpcode.DebugLine:
             case DreamProcOpcode.MassConcatenation:
+            case DreamProcOpcode.JumpIfNullNoPop:
+            case DreamProcOpcode.JumpIfTrueReferenceNoPop:
+            case DreamProcOpcode.JumpIfFalseReferenceNoPop:
                 return (opcode, ReadInt());
 
             case DreamProcOpcode.JumpIfNullDereference:

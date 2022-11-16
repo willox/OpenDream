@@ -568,6 +568,38 @@ namespace DMCompiler.DM {
             WriteLabel(label);
         }
 
+        public void JumpIfNullNoPop(string label) {
+            WriteOpcode(DreamProcOpcode.JumpIfNullNoPop);
+            WriteLabel(label);
+        }
+        public void JumpIfTrueReferenceNoPop(DMReference reference, string label) {
+            WriteOpcode(DreamProcOpcode.JumpIfTrueReferenceNoPop);
+            WriteReference(reference, affectStack: false);
+            WriteLabel(label);
+        }
+
+        public void JumpIfFalseReferenceNoPop(DMReference reference, string label) {
+            WriteOpcode(DreamProcOpcode.JumpIfFalseReferenceNoPop);
+            WriteReference(reference, affectStack: false);
+            WriteLabel(label);
+        }
+
+        public void DereferenceField(string field) {
+            WriteOpcode(DreamProcOpcode.DereferenceField);
+            WriteString(field);
+        }
+
+        public void DereferenceIndex() {
+            ShrinkStack(1);
+            WriteOpcode(DreamProcOpcode.DereferenceIndex);
+        }
+
+        public void DereferenceCall(string field) {
+            ShrinkStack(1);
+            WriteOpcode(DreamProcOpcode.DereferenceCall);
+            WriteString(field);
+        }
+
         public void Call(DMReference reference) {
             WriteOpcode(DreamProcOpcode.Call);
             WriteReference(reference);

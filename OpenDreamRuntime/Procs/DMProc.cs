@@ -136,7 +136,13 @@ namespace OpenDreamRuntime.Procs {
             null, //0x5E
             DMOpcodeHandlers.PushGlobalVars,
             DMOpcodeHandlers.ModulusModulus,
-            DMOpcodeHandlers.ModulusModulusReference
+            DMOpcodeHandlers.ModulusModulusReference,
+            DMOpcodeHandlers.JumpIfNullNoPop,
+            DMOpcodeHandlers.JumpIfTrueReferenceNoPop,
+            DMOpcodeHandlers.JumpIfFalseReferenceNoPop,
+            DMOpcodeHandlers.DereferenceField,
+            DMOpcodeHandlers.DereferenceIndex,
+            DMOpcodeHandlers.DereferenceCall,
         };
         #endregion
 

@@ -101,7 +101,13 @@ namespace OpenDreamShared.Dream.Procs {
         //0x5E
         PushGlobalVars = 0x5F,
         ModulusModulus = 0x60,
-        ModulusModulusReference = 0x61
+        ModulusModulusReference = 0x61,
+        JumpIfNullNoPop = 0x62,
+        JumpIfTrueReferenceNoPop = 0x63,
+        JumpIfFalseReferenceNoPop = 0x64,
+        DereferenceField = 0x65,
+        DereferenceIndex = 0x66,
+        DereferenceCall = 0x67,
     }
 
     public enum DreamProcOpcodeParameterType {

@@ -57,7 +57,7 @@ namespace Content.Tests
             if (!File.Exists(compiledFile))
                 return;
 
-            File.Delete(compiledFile);
+            // File.Delete(compiledFile);
         }
 
         [Test, TestCaseSource(nameof(GetTests))]
