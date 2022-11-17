@@ -4,9 +4,6 @@ using OpenDreamShared.Compiler;
 using DMCompiler.Compiler.DM;
 using OpenDreamShared.Dream;
 using OpenDreamShared.Dream.Procs;
-using System.Linq;
-using System.Xml.Linq;
-using Microsoft.Extensions.ObjectPool;
 
 namespace DMCompiler.DM.Visitors {
     sealed class DMVisitorExpression : DMASTVisitor {

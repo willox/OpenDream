@@ -8,8 +8,6 @@ using OpenDreamShared.Compiler;
 using OpenDreamShared.Dream;
 using OpenDreamShared.Dream.Procs;
 using String = System.String;
-using System.Net.Http.Headers;
-using System.Runtime.CompilerServices;
 using Robust.Shared.Utility;
 
 namespace DMCompiler.Compiler.DM {
@@ -76,7 +74,7 @@ namespace DMCompiler.Compiler.DM {
 
         };
 
-        private static readonly TokenType[] DerefTypes = {
+        private static readonly TokenType[] DereferenceTypes = {
             TokenType.DM_Period,
             TokenType.DM_Colon,
             TokenType.DM_QuestionPeriod,
@@ -84,7 +82,7 @@ namespace DMCompiler.Compiler.DM {
             TokenType.DM_QuestionLeftBracket,
         };
 
-        private static readonly TokenType[] WhitespacedDerefTypes = {
+        private static readonly TokenType[] WhitespacedDereferenceTypes = {
             TokenType.DM_LeftBracket,
         };
 
@@ -2039,8 +2037,7 @@ namespace DMCompiler.Compiler.DM {
         }
 
         private DMASTExpression ParseDereference(DMASTExpression expression, bool allowCalls = true) {
-            // Try to parse a call first
-            // Belongs in its own function :/
+            // We don't compile expression-calls as dereferences, but they have very similar precedence
             if (allowCalls) {
                 expression = ParseProcCall(expression);
             }
@@ -2053,20 +2050,15 @@ namespace DMCompiler.Compiler.DM {
 
                     // Check for a valid deref operation token
                     {
-                        // SavePosition();
-
-                        if (!Check(DerefTypes)) {
+                        if (!Check(DereferenceTypes)) {
                             Whitespace();
 
                             token = Current();
 
-                            if (!Check(WhitespacedDerefTypes)) {
-                                // RestorePosition();
+                            if (!Check(WhitespacedDereferenceTypes)) {
                                 break;
                             }
                         }
-
-                        // AcceptPosition();
                     }
 
                     // Cancel this operation chain (and potentially fall back to ternary behaviour) if this looks more like part of a ternary expression than a deref
@@ -2134,14 +2126,11 @@ namespace DMCompiler.Compiler.DM {
 
                     // Attempt to upgrade this operation to a call
                     if (allowCalls) {
-                        // SavePosition();
                         Whitespace();
 
                         DMASTCallParameter[] parameters = ProcCall();
 
                         if (parameters != null) {
-                            // AcceptPosition();
-
                             switch (operation.Kind) {
                                 case DMASTDeref.OperationKind.Field:
                                     operation.Kind = DMASTDeref.OperationKind.Call;
@@ -2173,9 +2162,6 @@ namespace DMCompiler.Compiler.DM {
                                 default:
                                     throw new InvalidOperationException("unhandled dereference operation kind");
                             }
-
-                        } else {
-                            // RestorePosition();
                         }
                     }
 

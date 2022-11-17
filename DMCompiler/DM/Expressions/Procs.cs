@@ -137,7 +137,5 @@ namespace DMCompiler.DM.Expressions {
             DMCompiler.UnimplementedWarning(Location, $"DMM overrides for expression {GetType()} are not implemented");
             return true; //TODO
         }
-
-        public override bool Conditional => _target.Conditional;
     }
 }

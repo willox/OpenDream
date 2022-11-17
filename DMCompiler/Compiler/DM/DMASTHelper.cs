@@ -205,7 +205,6 @@ namespace DMCompiler.Compiler.DM {
         // hasher.HashFile(astFile);
         //    var proc = hasher.GetProcByPath("/datum/browser/proc/get_header");
         // new DMAST.DMASTNodePrinter().Print(proc, Console.Out);
-        // TODO: wtf is this?
         public class DMASTNodePrinter : ObjectPrinter {
             public DMASTNodePrinter() {
                 tostring_types.AddRange( new Type[] { typeof(DMValueType), typeof(DreamPath), typeof(DreamPath.PathType) } );

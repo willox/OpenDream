@@ -1,8 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Xml.Schema;
-using DMCompiler.DM;
 using OpenDreamShared.Compiler;
 using OpenDreamShared.Dream;
 using OpenDreamShared.Dream.Procs;
