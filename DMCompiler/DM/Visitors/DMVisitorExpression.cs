@@ -460,6 +460,70 @@ namespace DMCompiler.DM.Visitors {
             DreamPath? prevPath = expr.Path;
             bool pathIsFuzzy = IsFuzzy(expr); // TODO: REVISIT!
 
+            // Special behaviour for `global.x`, `global.vars`, and `global.f()`
+            if (expr is Expressions.Global) {
+                ref DMASTDeref.Operation firstOperation = ref astOperations[0];
+
+                if (firstOperation.Kind == DMASTDeref.OperationKind.Field && firstOperation.Identifier.Identifier == "vars") {
+                    // `global.vars`
+                    expr = new GlobalVars(expr.Location);
+
+                    var newOperationCount = operations.Length - 1;
+                    if (newOperationCount == 0) {
+                        Result = expr;
+                        return;
+                    }
+
+                    operations = new Deref.Operation[newOperationCount];
+                    astOperationOffset = 1;
+
+                    prevPath = null;
+                    pathIsFuzzy = true;
+                } else if (firstOperation.Kind == DMASTDeref.OperationKind.Field) {
+                    // `global.x`
+
+                    var globalId = _dmObject.GetGlobalVariableId(firstOperation.Identifier.Identifier);
+                    if (globalId == null) {
+                        throw new CompileErrorException(deref.Location, $"Invalid property global.{firstOperation.Identifier.Identifier}");
+                    }
+
+                    var property = DMObjectTree.Globals[globalId.Value];
+                    expr = new GlobalField(expr.Location, property.Type, globalId.Value);
+
+                    var newOperationCount = operations.Length - 1;
+                    if (newOperationCount == 0) {
+                        Result = expr;
+                        return;
+                    }
+
+                    operations = new Deref.Operation[newOperationCount];
+                    astOperationOffset = 1;
+
+                    prevPath = property.Type;
+                    pathIsFuzzy = false;
+                } else if (firstOperation.Kind == DMASTDeref.OperationKind.Call) {
+                    // `global.f()`
+                    ArgumentList argumentList = new(deref.Expression.Location, _dmObject, _proc, firstOperation.Parameters, null);
+
+                    var proc = new Expressions.GlobalProc(expr.Location, firstOperation.Identifier.Identifier);
+                    expr = new Expressions.ProcCall(expr.Location, proc, argumentList);
+
+                    var newOperationCount = operations.Length - 1;
+                    if (newOperationCount == 0) {
+                        Result = expr;
+                        return;
+                    }
+
+                    operations = new Deref.Operation[newOperationCount];
+                    astOperationOffset = 1;
+
+                    prevPath = null;
+                    pathIsFuzzy = true;
+                } else {
+                    throw new CompileErrorException(deref.Location, $"Invalid dereference operation performed on `global`");
+                }
+            }
+
             for (int i = 0; i < operations.Length; i++) {
                 ref DMASTDeref.Operation astOperation = ref astOperations[i + astOperationOffset];
                 ref Deref.Operation operation = ref operations[i];
@@ -493,16 +557,28 @@ namespace DMCompiler.DM.Visitors {
                     case DMASTDeref.OperationKind.FieldSafe: {
                             string field = astOperation.Identifier.Identifier;
 
-                            DMVariable property = null;
+                            if (prevPath == null) {
+                                throw new CompileErrorException(deref.Location, $"Invalid property \"{field}\"");
+                            }
 
-                            // Special behaviour for global accesses
-                            if (i == 0 && expr is Expressions.Global) {
-                                if (field == "vars") {
-                                    // This is some crazy shit
-                                    expr = new GlobalVars(expr.Location);
+                            DMObject dmObject = DMObjectTree.GetDMObject(prevPath.Value, false);
+                            if (dmObject == null) {
+                                throw new CompileErrorException(deref.Location, $"Type {prevPath.Value} does not exist");
+                            }
+
+                            DMVariable property = dmObject.GetVariable(field);
+                            if (property != null) {
+                                operation.Identifier = field;
+                                operation.GlobalId = null;
+                                operation.Path = property.Type;
+                            } else {
+                                var globalId = dmObject.GetGlobalVariableId(field);
+                                if (globalId != null) {
+                                    property = DMObjectTree.Globals[globalId.Value];
+
+                                    expr = new GlobalField(expr.Location, property.Type, globalId.Value);
 
                                     var newOperationCount = operations.Length - i - 1;
-
                                     if (newOperationCount == 0) {
                                         Result = expr;
                                         return;
@@ -511,75 +587,6 @@ namespace DMCompiler.DM.Visitors {
                                     operations = new Deref.Operation[newOperationCount];
                                     astOperationOffset = i + 1;
                                     i = -1;
-
-                                    prevPath = null;
-                                    pathIsFuzzy = true;
-                                    continue;
-                                } else {
-                                    var globalId = _dmObject.GetGlobalVariableId(field);
-
-                                    if (globalId != null) {
-                                        property = DMObjectTree.Globals[globalId.Value];
-
-                                        // This is some crazy shit
-                                        expr = new GlobalField(expr.Location, property.Type, globalId.Value);
-
-                                        var newOperationCount = operations.Length - i - 1;
-
-                                        if (newOperationCount == 0) {
-                                            Result = expr;
-                                            return;
-                                        }
-
-                                        operations = new Deref.Operation[newOperationCount];
-                                        astOperationOffset = i + 1;
-                                        i = -1;
-                                    } else {
-                                        throw new CompileErrorException(deref.Location, $"Invalid property global.{field}");
-                                    }
-                                }
-                            }
-
-                            // Fail if no path
-                            if (property == null && prevPath == null) {
-                                throw new CompileErrorException(deref.Location, $"Invalid property \"{field}\"");
-                            }
-
-                            // Try a normal (non-global) lookup
-                            if (property == null) {
-                                DMObject dmObject = DMObjectTree.GetDMObject(prevPath.Value, false);
-                                if (dmObject == null) {
-                                    throw new CompileErrorException(deref.Location, $"Type {prevPath.Value} does not exist");
-                                }
-
-                                if (property == null) {
-                                    property = dmObject.GetVariable(field);
-                                }
-
-                            
-                                if (property != null) {
-                                    operation.Identifier = field;
-                                    operation.GlobalId = null;
-                                    operation.Path = property.Type;
-                                } else {
-                                    var globalId = dmObject.GetGlobalVariableId(field);
-                                    if (globalId != null) {
-                                        property = DMObjectTree.Globals[globalId.Value];
-
-                                        // This is some crazy shit
-                                        expr = new GlobalField(expr.Location, property.Type, globalId.Value);
-
-                                        var newOperationCount = operations.Length - i - 1;
-
-                                        if (newOperationCount == 0) {
-                                            Result = expr;
-                                            return;
-                                        }
-
-                                        operations = new Deref.Operation[newOperationCount];
-                                        astOperationOffset = i + 1;
-                                        i = -1;
-                                    }
                                 }
                             }
 
@@ -621,27 +628,6 @@ namespace DMCompiler.DM.Visitors {
                     case DMASTDeref.OperationKind.CallSafe: {
                             string field = astOperation.Identifier.Identifier;
                             ArgumentList argumentList = new(deref.Expression.Location, _dmObject, _proc, astOperation.Parameters, null);
-
-                            // Special behaviour for global accesses
-                            if (i == 0 && expr is Expressions.Global) {
-                                // This is some crazy shit
-                                var proc = new Expressions.GlobalProc(expr.Location, field);
-                                expr = new Expressions.ProcCall(expr.Location, proc, argumentList);
-
-                                var newOperationCount = operations.Length - i - 1;
-
-                                if (newOperationCount == 0) {
-                                    Result = expr;
-                                    return;
-                                }
-
-                                operations = new Deref.Operation[newOperationCount];
-                                astOperationOffset = i + 1;
-                                i = -1;
-                                prevPath = null;
-                                pathIsFuzzy = true;
-                                break;
-                            }
 
                             if (prevPath == null) {
                                 throw new CompileErrorException(deref.Location, $"Invalid property \"{field}\"");
