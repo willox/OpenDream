@@ -1246,15 +1246,6 @@ namespace OpenDreamRuntime.Procs {
 
                     break;
                 }
-                case DMReference.Type.Proc: {
-                    DreamValue owner = state.Pop();
-                    if (!owner.TryGetValueAsDreamObject(out instance) || instance == null)
-                        throw new Exception($"Cannot dereference proc \"{procRef.Name}\" from {owner}");
-                    if (!instance.TryGetProc(procRef.Name, out proc))
-                        throw new Exception($"Type {instance.ObjectDefinition.Type} has no proc called \"{procRef.Name}\"");
-
-                    break;
-                }
                 case DMReference.Type.GlobalProc: {
                     instance = null;
                     proc = state.DreamManager.ObjectTree.Procs[procRef.Index];

@@ -59,7 +59,6 @@ public struct ProcDecoder {
             case DMReference.Type.GlobalProc: return DMReference.CreateGlobalProc(ReadInt());
             case DMReference.Type.Field: return DMReference.CreateField(ReadString());
             case DMReference.Type.SrcField: return DMReference.CreateSrcField(ReadString());
-            case DMReference.Type.Proc: return DMReference.CreateProc(ReadString());
             case DMReference.Type.SrcProc: return DMReference.CreateSrcProc(ReadString());
             case DMReference.Type.Src: return DMReference.Src;
             case DMReference.Type.Self: return DMReference.Self;

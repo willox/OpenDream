@@ -70,9 +70,6 @@ namespace DMCompiler.Compiler.DM {
         public void VisitVarDeclExpression(DMASTVarDeclExpression vardecl) { throw new NotImplementedException(); }
         public void VisitNewPath(DMASTNewPath newPath) { throw new NotImplementedException(); }
         public void VisitNewExpr(DMASTNewExpr newExpr) { throw new NotImplementedException(); }
-        public void VisitNewIdentifier(DMASTNewIdentifier newIdentifier) { throw new NotImplementedException(); }
-        public void VisitNewDereference(DMASTNewDereference newDereference) { throw new NotImplementedException(); }
-        public void VisitNewListIndex(DMASTNewListIndex newListIndex) { throw new NotImplementedException(); }
         public void VisitNewInferred(DMASTNewInferred newInferred) { throw new NotImplementedException(); }
         public void VisitNot(DMASTNot not) { throw new NotImplementedException(); }
         public void VisitNegate(DMASTNegate negate) { throw new NotImplementedException(); }
@@ -119,13 +116,10 @@ namespace DMCompiler.Compiler.DM {
         public void VisitRightShift(DMASTRightShift rightShift) { throw new NotImplementedException(); }
         public void VisitIn(DMASTExpressionIn expressionIn) { throw new NotImplementedException(); }
         public void VisitInRange(DMASTExpressionInRange expressionInRange) { throw new NotImplementedException(); }
-        public void VisitListIndex(DMASTListIndex listIndex) { throw new NotImplementedException(); }
         public void VisitProcCall(DMASTProcCall procCall) { throw new NotImplementedException(); }
         public void VisitCallParameter(DMASTCallParameter callParameter) { throw new NotImplementedException(); }
         public void VisitDefinitionParameter(DMASTDefinitionParameter definitionParameter) { throw new NotImplementedException(); }
         public void VisitDeref(DMASTDeref deref) { throw new NotImplementedException(); }
-        public void VisitDereference(DMASTDereference dereference) { throw new NotImplementedException(); }
-        public void VisitDereferenceProc(DMASTDereferenceProc dereferenceProc) { throw new NotImplementedException(); }
         public void VisitCallableProcIdentifier(DMASTCallableProcIdentifier procIdentifier) { throw new NotImplementedException(); }
         public void VisitCallableSuper(DMASTCallableSuper super) { throw new NotImplementedException(); }
         public void VisitCallableSelf(DMASTCallableSelf self) { throw new NotImplementedException(); }
@@ -1049,7 +1043,6 @@ namespace DMCompiler.Compiler.DM {
             visitor.VisitNewPath(this);
         }
     }
-
     public class DMASTNewExpr : DMASTExpression {
         public DMASTExpression Expression;
         public DMASTCallParameter[] Parameters;
@@ -1062,48 +1055,6 @@ namespace DMCompiler.Compiler.DM {
             visitor.VisitNewExpr(this);
         }
     }
-
-    public class DMASTNewIdentifier : DMASTExpression {
-        public DMASTIdentifier Identifier;
-        public DMASTCallParameter[] Parameters;
-
-        public DMASTNewIdentifier(Location location, DMASTIdentifier identifier, DMASTCallParameter[] parameters) : base(location) {
-            Identifier = identifier;
-            Parameters = parameters;
-        }
-
-        public override void Visit(DMASTVisitor visitor) {
-            visitor.VisitNewIdentifier(this);
-        }
-    }
-
-    public class DMASTNewDereference : DMASTExpression {
-        public DMASTDereference Dereference;
-        public DMASTCallParameter[] Parameters;
-
-        public DMASTNewDereference(Location location, DMASTDereference dereference, DMASTCallParameter[] parameters) : base(location) {
-            Dereference = dereference;
-            Parameters = parameters;
-        }
-
-        public override void Visit(DMASTVisitor visitor) {
-            visitor.VisitNewDereference(this);
-        }
-    }
-
-    public class DMASTNewListIndex : DMASTExpression {
-            public DMASTListIndex ListIdx;
-            public DMASTCallParameter[] Parameters;
-
-            public DMASTNewListIndex(Location location, DMASTListIndex listIdx, DMASTCallParameter[] parameters) : base(location) {
-                ListIdx = listIdx;
-                Parameters = parameters;
-            }
-
-            public override void Visit(DMASTVisitor visitor) {
-                visitor.VisitNewListIndex(this);
-            }
-        }
 
     public class DMASTNewInferred : DMASTExpression {
         public DMASTCallParameter[] Parameters;
@@ -1771,23 +1722,6 @@ namespace DMCompiler.Compiler.DM {
         }
     }
 
-    public class DMASTListIndex : DMASTExpression {
-        public DMASTExpression Expression;
-        public DMASTExpression Index;
-        public bool Conditional;
-
-        public DMASTListIndex(Location location, DMASTExpression expression, DMASTExpression index, bool conditional) : base(location) {
-            Expression = expression;
-            Index = index;
-            Conditional = conditional;
-        }
-        public override IEnumerable<DMASTExpression> Leaves() { yield return Expression; yield return Index; }
-
-        public override void Visit(DMASTVisitor visitor) {
-            visitor.VisitListIndex(this);
-        }
-    }
-
     public class DMASTProcCall : DMASTExpression {
         public DMASTCallable Callable;
         public DMASTCallParameter[] Parameters;
@@ -1880,37 +1814,6 @@ namespace DMCompiler.Compiler.DM {
         }
         public override void Visit(DMASTVisitor visitor) {
             visitor.VisitDeref(this);
-        }
-    }
-
-    public class DMASTDereference : DMASTExpression, DMASTCallable {
-        public enum DereferenceType {
-            Direct,
-            Search,
-        }
-
-        public DMASTExpression Expression;
-        public string Property;
-        public DereferenceType Type;
-        public bool Conditional;
-
-        public DMASTDereference(Location location, DMASTExpression expression, string property, DereferenceType type, bool conditional) : base(location) {
-            Expression = expression;
-            Property = property;
-            Type = type;
-            Conditional = conditional;
-        }
-
-        public override void Visit(DMASTVisitor visitor) {
-            visitor.VisitDereference(this);
-        }
-    }
-
-    public class DMASTDereferenceProc : DMASTDereference {
-        public DMASTDereferenceProc(Location location, DMASTExpression expression, string property, DereferenceType type, bool conditional) : base(location, expression, property, type, conditional) { }
-
-        public override void Visit(DMASTVisitor visitor) {
-            visitor.VisitDereferenceProc(this);
         }
     }
 

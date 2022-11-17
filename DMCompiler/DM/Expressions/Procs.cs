@@ -108,7 +108,6 @@ namespace DMCompiler.DM.Expressions {
             return _target switch {
                 Proc procTarget => (dmObject, procTarget.GetProc(dmObject)),
                 GlobalProc procTarget => (null, procTarget.GetProc()),
-                DereferenceProc derefTarget => derefTarget.GetProc(),
                 _ => (null, null)
             };
         }

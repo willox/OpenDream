@@ -978,7 +978,6 @@ namespace DMCompiler.DM {
                     break;
 
                 case DMReference.Type.Field:
-                case DMReference.Type.Proc:
                     WriteString(reference.Name);
                     ShrinkStack(affectStack ? 1 : 0);
                     break;

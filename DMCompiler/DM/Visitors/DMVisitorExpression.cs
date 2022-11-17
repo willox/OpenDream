@@ -436,12 +436,6 @@ namespace DMCompiler.DM.Visitors {
             Result = new Expressions.Ternary(ternary.Location, a, b, c);
         }
 
-        public void VisitListIndex(DMASTListIndex listIndex) {
-            var expr = DMExpression.Create(_dmObject, _proc, listIndex.Expression, _inferredPath);
-            var index = DMExpression.Create(_dmObject, _proc, listIndex.Index, expr.Path);
-            Result = new Expressions.ListIndex(listIndex.Location, expr, index, expr.Path, listIndex.Conditional);
-        }
-
         public void VisitDeref(DMASTDeref deref) {
             var astOperations = deref.Operations;
 
@@ -454,9 +448,7 @@ namespace DMCompiler.DM.Visitors {
             static bool IsFuzzy(DMExpression expr) {
                 switch (expr) {
                     case ProcCall when expr.Path == null:
-                    case DereferenceProc:
                     case List:
-                    case ListIndex:
                     case Ternary:
                     case BinaryAnd:
                         return true;
@@ -490,7 +482,9 @@ namespace DMCompiler.DM.Visitors {
 
                         // Indexes are always fuzzy anyway!
                         DMASTDeref.OperationKind.Index => DMASTDeref.OperationKind.Index,
-                        DMASTDeref.OperationKind.IndexSafe => DMASTDeref.OperationKind.IndexSafe
+                        DMASTDeref.OperationKind.IndexSafe => DMASTDeref.OperationKind.IndexSafe,
+
+                        _ => throw new InvalidOperationException(),
                     };
                 }
 
@@ -689,45 +683,6 @@ namespace DMCompiler.DM.Visitors {
             Result = new Expressions.Deref(deref.Location, prevPath, expr, operations);
         }
 
-        public void VisitDereference(DMASTDereference dereference) {
-            var expr = DMExpression.Create(_dmObject, _proc, dereference.Expression, _inferredPath);
-
-            if (dereference.Type == DMASTDereference.DereferenceType.Direct && !Dereference.DirectConvertable(expr, dereference)) {
-                if (expr.Path == null) {
-                    throw new CompileErrorException(dereference.Location, $"Invalid property \"{dereference.Property}\"");
-                }
-
-                DMObject dmObject = DMObjectTree.GetDMObject(expr.Path.Value, false);
-                if (dmObject == null) throw new CompileErrorException(dereference.Location, $"Type {expr.Path.Value} does not exist");
-
-                var property = dmObject.GetVariable(dereference.Property);
-                if (property != null) {
-                    Result = new Expressions.Dereference(dereference.Location, property.Type, expr, dereference.Conditional, dereference.Property);
-                } else {
-                    var globalId = dmObject.GetGlobalVariableId(dereference.Property);
-                    if (globalId != null) {
-                        property = DMObjectTree.Globals[globalId.Value];
-                        Result = new Expressions.GlobalField(dereference.Location, property.Type, globalId.Value);
-                    }
-                }
-
-                if (property == null) {
-                    throw new CompileErrorException(dereference.Location, $"Invalid property \"{dereference.Property}\" on type {dmObject.Path}");
-                }
-
-                if ((property.ValType & DMValueType.Unimplemented) == DMValueType.Unimplemented) {
-                    DMCompiler.UnimplementedWarning(dereference.Location, $"{dmObject.Path}.{dereference.Property} is not implemented and will have unexpected behavior");
-                }
-            } else {
-                Result = new Expressions.Dereference(dereference.Location, null, expr, dereference.Conditional, dereference.Property);
-            }
-        }
-
-        public void VisitDereferenceProc(DMASTDereferenceProc dereferenceProc) {
-            var expr = DMExpression.Create(_dmObject, _proc, dereferenceProc.Expression, _inferredPath);
-            Result = new Expressions.DereferenceProc(dereferenceProc.Location, expr, dereferenceProc);
-        }
-
         public void VisitNewPath(DMASTNewPath newPath) {
             var args = new ArgumentList(newPath.Location, _dmObject, _proc, newPath.Parameters, _inferredPath);
             Result = new Expressions.NewPath(newPath.Location, newPath.Path.Path, args);
@@ -746,24 +701,6 @@ namespace DMCompiler.DM.Visitors {
 
             var args = new ArgumentList(newInferred.Location, _dmObject, _proc, newInferred.Parameters, _inferredPath);
             Result = new Expressions.NewPath(newInferred.Location, _inferredPath.Value, args);
-        }
-
-        public void VisitNewIdentifier(DMASTNewIdentifier newIdentifier) {
-            var expr = DMExpression.Create(_dmObject, _proc, newIdentifier.Identifier, _inferredPath);
-            var args = new ArgumentList(newIdentifier.Location, _dmObject, _proc, newIdentifier.Parameters, _inferredPath);
-            Result = new Expressions.New(newIdentifier.Location, expr, args);
-        }
-
-        public void VisitNewDereference(DMASTNewDereference newDereference) {
-            var expr = DMExpression.Create(_dmObject, _proc, newDereference.Dereference, _inferredPath);
-            var args = new ArgumentList(newDereference.Location, _dmObject, _proc, newDereference.Parameters, _inferredPath);
-            Result = new Expressions.New(newDereference.Location, expr, args);
-        }
-
-        public void VisitNewListIndex(DMASTNewListIndex newListIdx) {
-            var expr = DMExpression.Create(_dmObject, _proc, newListIdx.ListIdx, _inferredPath);
-            var args = new ArgumentList(newListIdx.Location, _dmObject, _proc, newListIdx.Parameters, _inferredPath);
-            Result = new Expressions.New(newListIdx.Location, expr, args);
         }
 
         public void VisitPreIncrement(DMASTPreIncrement preIncrement) {

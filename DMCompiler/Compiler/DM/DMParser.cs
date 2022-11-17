@@ -6,7 +6,6 @@ using DMCompiler.Compiler.DMPreprocessor;
 using DMCompiler.DM.Expressions;
 using OpenDreamShared.Compiler;
 using OpenDreamShared.Dream;
-using DereferenceType = DMCompiler.Compiler.DM.DMASTDereference.DereferenceType;
 using OpenDreamShared.Dream.Procs;
 using String = System.String;
 using System.Net.Http.Headers;
@@ -86,13 +85,6 @@ namespace DMCompiler.Compiler.DM {
 
         private static readonly TokenType[] WhitespacedDerefTypes = {
             TokenType.DM_LeftBracket,
-        };
-
-        private static readonly TokenType[] DereferenceTypes = {
-            TokenType.DM_Period,
-            TokenType.DM_Colon,
-            TokenType.DM_QuestionPeriod,
-            TokenType.DM_QuestionColon
         };
 
         private static readonly TokenType[] WhitespaceTypes = {
@@ -1608,6 +1600,8 @@ namespace DMCompiler.Compiler.DM {
                     Whitespace();
                     c = ExpressionTernary();
                 } else {
+                    // TODO: is this important?
+#if false
                     if (b is DMASTDereference deref) {
                         c = null;
 
@@ -1636,6 +1630,10 @@ namespace DMCompiler.Compiler.DM {
                         Error("Expected ':'");
                         c = null;
                     }
+#else
+                    Error("Expected ':'");
+                    c = null;
+#endif
                 }
 
                 return new DMASTTernary(a.Location, a, b, c);
@@ -2119,6 +2117,7 @@ namespace DMCompiler.Compiler.DM {
                                     TokenType.DM_QuestionPeriod => DMASTDeref.OperationKind.FieldSafe,
                                     TokenType.DM_Colon => DMASTDeref.OperationKind.FieldSearch,
                                     TokenType.DM_QuestionColon => DMASTDeref.OperationKind.FieldSafeSearch,
+                                    _ => throw new InvalidOperationException(),
                                 };
 
                                 operation.Identifier = identifier;
@@ -2134,6 +2133,7 @@ namespace DMCompiler.Compiler.DM {
                                 operation.Kind = token.Type switch {
                                     TokenType.DM_LeftBracket => DMASTDeref.OperationKind.Index,
                                     TokenType.DM_QuestionLeftBracket => DMASTDeref.OperationKind.IndexSafe,
+                                    _ => throw new InvalidOperationException(),
                                 };
 
                                 operation.Index = index;
@@ -2205,7 +2205,7 @@ namespace DMCompiler.Compiler.DM {
         }
 
         private DMASTExpression ParseProcCall(DMASTExpression expression) {
-            if (expression is not (DMASTCallable or DMASTIdentifier or DMASTDereference or DMASTGlobalIdentifier)) return expression;
+            if (expression is not (DMASTCallable or DMASTIdentifier or DMASTGlobalIdentifier)) return expression;
 
             Whitespace();
 
@@ -2224,10 +2224,6 @@ namespace DMCompiler.Compiler.DM {
                 if (expression is DMASTGlobalIdentifier gid) {
                     var globalProc = new DMASTCallableGlobalProc(expression.Location, gid.Identifier);
                     return new DMASTProcCall(gid.Location, globalProc, callParameters);
-                }
-                else if (expression is DMASTDereference deref) {
-                    DMASTDereferenceProc derefProc = new DMASTDereferenceProc(deref.Location, deref.Expression, deref.Property, deref.Type, deref.Conditional);
-                    return new DMASTProcCall(expression.Location, derefProc, callParameters);
                 }
                 else if (expression is DMASTCallable callable) {
                     return new DMASTProcCall(expression.Location, callable, callParameters);
