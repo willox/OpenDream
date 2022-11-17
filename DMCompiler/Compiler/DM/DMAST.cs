@@ -1806,6 +1806,8 @@ namespace DMCompiler.Compiler.DM {
         }
 
         public DMASTExpression Expression;
+
+        // Always contains at least one operation
         public Operation[] Operations;
 
         public DMASTDeref(Location location, DMASTExpression expression, Operation[] operations) : base(location) {

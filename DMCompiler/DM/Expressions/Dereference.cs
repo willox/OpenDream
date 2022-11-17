@@ -213,6 +213,7 @@ namespace DMCompiler.DM.Expressions {
                     break;
 
                 case DMASTDeref.OperationKind.Index:
+                    // TODO: Support "vars" properly (i don't know what that means)
                     proc.Pop();
                     proc.PushFloat(0f);
                     break;

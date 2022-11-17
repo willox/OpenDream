@@ -10,6 +10,7 @@ using OpenDreamShared.Dream.Procs;
 using String = System.String;
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
+using Robust.Shared.Utility;
 
 namespace DMCompiler.Compiler.DM {
     public partial class DMParser : Parser<Token> {
@@ -1595,45 +1596,32 @@ namespace DMCompiler.Compiler.DM {
                  *      a ? foo():pixel_x : 2
                  */
 
-                DMASTExpression c;
+                DMASTExpression c = null;
                 if (Check(TokenType.DM_Colon)) {
                     Whitespace();
                     c = ExpressionTernary();
                 } else {
-                    // TODO: is this important?
-#if false
-                    if (b is DMASTDereference deref) {
-                        c = null;
+                    // Convert our `b` expression from a dereference if its last operation could be an ambiguous ternary operand
+                    // TODO: parenthesis erasure is causing this to allow `x?(y:z)` to be treated as ternary
+                    if (b is DMASTDeref deref) {
+                        Warning("ambiguous ternary expression (is it lacking whitespace around ':'?)");
 
-                        DMASTExpression expr;
-                        DereferenceType type = default;
-                        bool conditional = default;
-                        do {
-                            if (c == null) {
-                                c = new DMASTIdentifier(deref.Location, deref.Property);
+                        var lastOp = deref.Operations[^1];
+
+                        if (lastOp.Kind == DMASTDeref.OperationKind.FieldSearch) {
+                            if (deref.Operations.Length == 1) {
+                                b = deref.Expression;
+                                c = lastOp.Identifier;
                             } else {
-                                c = new DMASTDereference(deref.Location, new DMASTIdentifier(deref.Location, deref.Property), ((DMASTIdentifier)c).Identifier, type, conditional);
+                                deref.Operations = deref.Operations[..^1].ToArray();
+                                c = lastOp.Identifier;
                             }
-
-                            expr = deref.Expression;
-                            type = deref.Type;
-                            conditional = deref.Conditional;
-                            deref = expr as DMASTDereference;
-                        } while (deref != null);
-
-                        if (deref == null && type == DereferenceType.Search) {
-                            b = expr;
-                        } else {
-                            Error("Expected ':'");
                         }
-                    } else {
-                        Error("Expected ':'");
-                        c = null;
                     }
-#else
-                    Error("Expected ':'");
-                    c = null;
-#endif
+
+                    if (c == null) {
+                        Error("Expected ':'");
+                    }
                 }
 
                 return new DMASTTernary(a.Location, a, b, c);
