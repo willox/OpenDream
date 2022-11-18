@@ -1606,12 +1606,17 @@ namespace DMCompiler.Compiler.DM {
 
                         int? ambiguousOpIndex = null;
 
-                        // Skip through operations until we find a FieldSearch operation
+                        // Skip through operations until we find an ambiguous operation
                         for (int i = deref.Operations.Length - 1; i >= 0; i--) {
                             var op = deref.Operations[i];
 
                             if (op.Kind == DMASTDereference.OperationKind.FieldSearch) {
                                 ambiguousOpIndex = i;
+                                break;
+                            }
+
+                            if (op.Kind == DMASTDereference.OperationKind.CallSearch) {
+                                // TODO: We don't support disambiguating call operations, synthesizing the AST nodes for them is tricky since we need special handling for `pick`
                                 break;
                             }
                         }
@@ -1620,18 +1625,18 @@ namespace DMCompiler.Compiler.DM {
                             var ambiguousOp = deref.Operations[ambiguousOpIndex.Value];
 
                             if (deref.Operations.Length == 1) {
-                                // The only operation is the ambiguous SafeField
+                                // The only operation is the ambiguous search
                                 //
-                                // b becomes the object being accessed by SafeField
-                                // c becomes the SafeField's identifier
+                                // b becomes the object being accessed by search
+                                // c becomes the search's identifier
 
                                 b = deref.Expression;
                                 c = ambiguousOp.Identifier;
                             } else if (ambiguousOpIndex == 0) {
-                                // The first operation in our dereference is the ambiguous SafeField
+                                // The first operation in our dereference is the ambiguous search
                                 //
-                                // b becomes the object being accessed by SafeField
-                                // c becomes the SafeField's identifier
+                                // b becomes the object being accessed by search
+                                // c becomes the search's identifier
                                 // We then wrap our returned ternary with a Dereference of the trailing operations
 
                                 b = deref.Expression;
@@ -1639,18 +1644,18 @@ namespace DMCompiler.Compiler.DM {
 
                                 return new DMASTDereference(a.Location, new DMASTTernary(a.Location, a, b, c), deref.Operations[1..].ToArray());
                             } else if (ambiguousOpIndex == deref.Operations.Length - 1) {
-                                // The final operation in our dereference is the ambiguous SafeField
+                                // The final operation in our dereference is the ambiguous search
                                 //
                                 // b has the ambiguous operation removed
-                                // c becomes the SafeField's identifier
+                                // c becomes the search's identifier
 
                                 deref.Operations = deref.Operations[..^1].ToArray();
                                 c = ambiguousOp.Identifier;
                             } else {
-                                // An operation somewhere in the middle is an ambiguous SafeField
+                                // An operation somewhere in the middle is an ambiguous search
                                 //
                                 // b has the ambiguous operations and any operations following it removed
-                                // c becomes the SafeField's identifier
+                                // c becomes the search's identifier
                                 // We then wrap our returned ternary with a Dereference of the trailing operations
 
                                 var leadingOperations = deref.Operations[..ambiguousOpIndex.Value].ToArray();
