@@ -1604,15 +1604,62 @@ namespace DMCompiler.Compiler.DM {
                     if (b is DMASTDereference deref) {
                         Warning("ambiguous ternary expression (is it lacking whitespace around ':'?)");
 
-                        var lastOp = deref.Operations[^1];
+                        int? ambiguousOpIndex = null;
 
-                        if (lastOp.Kind == DMASTDereference.OperationKind.FieldSearch) {
+                        // Skip through operations until we find a FieldSearch operation
+                        for (int i = deref.Operations.Length - 1; i >= 0; i--) {
+                            var op = deref.Operations[i];
+
+                            if (op.Kind == DMASTDereference.OperationKind.FieldSearch) {
+                                ambiguousOpIndex = i;
+                                break;
+                            }
+                        }
+
+                        if (ambiguousOpIndex != null) {
+                            var ambiguousOp = deref.Operations[ambiguousOpIndex.Value];
+
                             if (deref.Operations.Length == 1) {
+                                // The only operation is the ambiguous SafeField
+                                //
+                                // b becomes the object being accessed by SafeField
+                                // c becomes the SafeField's identifier
+
                                 b = deref.Expression;
-                                c = lastOp.Identifier;
-                            } else {
+                                c = ambiguousOp.Identifier;
+                            } else if (ambiguousOpIndex == 0) {
+                                // The first operation in our dereference is the ambiguous SafeField
+                                //
+                                // b becomes the object being accessed by SafeField
+                                // c becomes the SafeField's identifier
+                                // We then wrap our returned ternary with a Dereference of the trailing operations
+
+                                b = deref.Expression;
+                                c = ambiguousOp.Identifier;
+
+                                return new DMASTDereference(a.Location, new DMASTTernary(a.Location, a, b, c), deref.Operations[1..].ToArray());
+                            } else if (ambiguousOpIndex == deref.Operations.Length - 1) {
+                                // The final operation in our dereference is the ambiguous SafeField
+                                //
+                                // b has the ambiguous operation removed
+                                // c becomes the SafeField's identifier
+
                                 deref.Operations = deref.Operations[..^1].ToArray();
-                                c = lastOp.Identifier;
+                                c = ambiguousOp.Identifier;
+                            } else {
+                                // An operation somewhere in the middle is an ambiguous SafeField
+                                //
+                                // b has the ambiguous operations and any operations following it removed
+                                // c becomes the SafeField's identifier
+                                // We then wrap our returned ternary with a Dereference of the trailing operations
+
+                                var leadingOperations = deref.Operations[..ambiguousOpIndex.Value].ToArray();
+                                var trailingOperations = deref.Operations[(ambiguousOpIndex.Value+1)..].ToArray();
+
+                                deref.Operations = leadingOperations;
+                                c = ambiguousOp.Identifier;
+                                
+                                return new DMASTDereference(a.Location, new DMASTTernary(a.Location, a, b, c), trailingOperations);
                             }
                         }
                     }
