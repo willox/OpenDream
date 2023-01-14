@@ -834,7 +834,7 @@ sealed class DreamDebugManager : IDreamDebugManager {
     }
 }
 
-internal interface IDreamDebugManager {
+public interface IDreamDebugManager {
     public void Initialize(int port);
     public void Update();
     public void Shutdown();

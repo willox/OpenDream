@@ -10,7 +10,7 @@ using OpenDreamShared.Dream.Procs;
 using OpenDreamShared.Json;
 
 namespace OpenDreamRuntime.Procs {
-    sealed class DMProc : DreamProc {
+    public sealed class DMProc : DreamProc {
         public readonly byte[] Bytecode;
 
         public string? Source { get; }
@@ -70,7 +70,7 @@ namespace OpenDreamRuntime.Procs {
         }
     }
 
-    sealed class DMProcState : ProcState {
+    public sealed class DMProcState : ProcState {
         delegate ProcStatus? OpcodeHandler(DMProcState state);
 
         public static readonly Stack<DMProcState> Pool = new();
