@@ -1264,12 +1264,18 @@ namespace OpenDreamRuntime.Procs {
                 }
             }
 
+            bool success;
             if (value.TryGetValueAsDreamObject(out var dreamObject) && dreamObject != null) {
-                state.Push(new DreamValue(dreamObject.IsSubtypeOf(type) ? 1 : 0));
+                success = dreamObject.IsSubtypeOf(type);
             } else {
-                state.Push(new DreamValue(0));
+                success = false;
             }
 
+            if (!success) {
+                throw new Exception($"IsType returned FALSE: {value}, {type}");
+            }
+
+            state.Push(new DreamValue(success ? 1 : 0));
             return null;
         }
         #endregion Comparisons
