@@ -20,7 +20,7 @@ namespace OpenDreamRuntime.Objects {
 
         public virtual bool IsAssociative => (_associativeValues != null && _associativeValues.Count > 0);
 
-        protected DreamList(int size = 0) : base(_listDef ??= IoCManager.Resolve<IDreamObjectTree>().List.ObjectDefinition) {
+        protected DreamList(int size = 0) : base(_listDef = IoCManager.Resolve<IDreamObjectTree>().List.ObjectDefinition) {
             _values = new List<DreamValue>(size);
         }
 

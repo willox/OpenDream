@@ -1271,10 +1271,6 @@ namespace OpenDreamRuntime.Procs {
                 success = false;
             }
 
-            if (!success) {
-                throw new Exception($"IsType returned FALSE: {value}, {type}");
-            }
-
             state.Push(new DreamValue(success ? 1 : 0));
             return null;
         }
