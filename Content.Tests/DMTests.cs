@@ -122,7 +122,7 @@ namespace Content.Tests
                     if (proc is DMProc {VerbName: "DumpOpcodes"} dmProc) {
                         ProcDecoder decoder = new ProcDecoder(_objectTree.Strings, dmProc.Bytecode);
                         foreach (var opcode in decoder.Disassemble()) {
-                            TestContext.WriteLine(ProcDecoder.Format(opcode, type => _objectTree.GetTreeEntry(type).Path.PathString));
+                            TestContext.WriteLine($"{opcode.Offset}\t{ProcDecoder.Format(opcode.Instruction, type => _objectTree.GetTreeEntry(type).Path.PathString)}");
                         }
                     }
 
