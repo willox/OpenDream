@@ -523,8 +523,20 @@ namespace DMCompiler.DM.Visitors {
                     _proc.MarkLoopContinue(loopLabel);
 
                     if (lValue != null) {
-                        (DMReference outputRef, _) = lValue.EmitReference(_dmObject, _proc);
-                        _proc.Enumerate(outputRef);
+                        string endLabel = _proc.NewLabelName();
+                        string endLabel2 = _proc.NewLabelName();
+
+                        DMReference outputRef = lValue.EmitReference(_dmObject, _proc, endLabel, DMExpression.ShortCircuitMode.KeepNull);
+
+                        _proc.Enumerate();
+                        _proc.Assign(outputRef);
+                        _proc.Jump(endLabel2);
+
+                        _proc.AddLabel(endLabel);
+                        _proc.Pop();
+                        _proc.Enumerate();
+                        _proc.AddLabel(endLabel2);
+                        _proc.Pop();
                     }
 
                     ProcessBlockInner(body);
@@ -564,8 +576,20 @@ namespace DMCompiler.DM.Visitors {
                     _proc.MarkLoopContinue(loopLabel);
 
                     if (outputVar is Expressions.LValue lValue) {
-                        (DMReference outputRef, _) = lValue.EmitReference(_dmObject, _proc);
-                        _proc.Enumerate(outputRef);
+                        string endLabel = _proc.NewLabelName();
+                        string endLabel2 = _proc.NewLabelName();
+
+                        DMReference outputRef = lValue.EmitReference(_dmObject, _proc, endLabel, DMExpression.ShortCircuitMode.KeepNull);
+
+                        _proc.Enumerate();
+                        _proc.Assign(outputRef);
+                        _proc.Jump(endLabel2);
+
+                        _proc.AddLabel(endLabel);
+                        _proc.Pop();
+                        _proc.Enumerate();
+                        _proc.AddLabel(endLabel2);
+                        _proc.Pop();
                     } else {
                         DMCompiler.Emit(WarningCode.BadExpression, outputVar.Location, "Invalid output var");
                     }
@@ -602,8 +626,20 @@ namespace DMCompiler.DM.Visitors {
                     _proc.MarkLoopContinue(loopLabel);
 
                     if (outputVar is Expressions.LValue lValue) {
-                        (DMReference outputRef, _) = lValue.EmitReference(_dmObject, _proc);
-                        _proc.Enumerate(outputRef);
+                        string endLabel = _proc.NewLabelName();
+                        string endLabel2 = _proc.NewLabelName();
+
+                        DMReference outputRef = lValue.EmitReference(_dmObject, _proc, endLabel, DMExpression.ShortCircuitMode.KeepNull);
+
+                        _proc.Enumerate();
+                        _proc.Assign(outputRef);
+                        _proc.Jump(endLabel2);
+
+                        _proc.AddLabel(endLabel);
+                        _proc.Pop();
+                        _proc.Enumerate();
+                        _proc.AddLabel(endLabel2);
+                        _proc.Pop();
                     } else {
                         DMCompiler.Emit(WarningCode.BadExpression, outputVar.Location, "Invalid output var");
                     }
@@ -790,10 +826,11 @@ namespace DMCompiler.DM.Visitors {
                 // An LValue on the left needs a special opcode so that its reference can be used
                 // This allows for special operations like "savefile[...] << ..."
 
-                (DMReference leftRef, _) = left.EmitReference(_dmObject, _proc);
+                string endLabel = _proc.NewLabelName();
+                DMReference leftRef = left.EmitReference(_dmObject, _proc, endLabel, DMExpression.ShortCircuitMode.PopNull);
                 right.EmitPushValue(_dmObject, _proc);
-
                 _proc.OutputReference(leftRef);
+                _proc.AddLabel(endLabel);
             } else {
                 left.EmitPushValue(_dmObject, _proc);
                 right.EmitPushValue(_dmObject, _proc);
@@ -818,10 +855,16 @@ namespace DMCompiler.DM.Visitors {
                 return;
             }
 
-            (DMReference rightRef, _) = right.EmitReference(_dmObject, _proc);
-            (DMReference leftRef, _) = left.EmitReference(_dmObject, _proc);
+            string rightEndLabel = _proc.NewLabelName();
+            string leftEndLabel = _proc.NewLabelName();
+            DMReference rightRef = right.EmitReference(_dmObject, _proc, rightEndLabel, DMExpression.ShortCircuitMode.PopNull);
+            DMReference leftRef = left.EmitReference(_dmObject, _proc, leftEndLabel, DMExpression.ShortCircuitMode.PopNull);
 
             _proc.Input(leftRef, rightRef);
+
+            _proc.AddLabel(leftEndLabel);
+            _proc.PopReference(rightRef);
+            _proc.AddLabel(rightEndLabel);
         }
 
         public void ProcessStatementTryCatch(DMASTProcStatementTryCatch tryCatch) {

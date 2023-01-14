@@ -12,6 +12,34 @@ using OpenDreamShared.Dream.Procs;
 
 namespace OpenDreamRuntime.Procs {
     static class DMOpcodeHandlers {
+        #region Helpers
+        private static void PushListGet(DMProcState state, DreamValue obj, DreamValue index) {
+            if (obj.TryGetValueAsDreamList(out var listObj)) {
+                state.Push(listObj.GetValue(index));
+                return;
+            }
+
+            if (obj.TryGetValueAsString(out string? strValue)) {
+                if (!index.TryGetValueAsInteger(out int strIndex))
+                    throw new Exception($"Attempted to index string with {index}");
+
+                char c = strValue[strIndex - 1];
+                state.Push(new DreamValue(Convert.ToString(c)));
+                return;
+            }
+
+            if (obj.TryGetValueAsDreamObject(out var dreamObject)) {
+                IDreamMetaObject? metaObject = dreamObject?.ObjectDefinition?.MetaObject;
+                if (metaObject != null) {
+                    state.Push(metaObject.OperatorIndex(dreamObject!, index));
+                    return;
+                }
+            }
+
+            throw new Exception($"Cannot get index {index} of {obj}");
+        }
+        #endregion
+
         #region Values
         public static ProcStatus? PushReferenceValue(DMProcState state) {
             DMReference reference = state.ReadReference();
@@ -177,13 +205,14 @@ namespace OpenDreamRuntime.Procs {
 
         public static ProcStatus? Enumerate(DMProcState state) {
             IDreamValueEnumerator enumerator = state.EnumeratorStack.Peek();
-            DMReference reference = state.ReadReference();
             int jumpToIfFailure = state.ReadInt();
             bool successfulEnumeration = enumerator.MoveNext();
 
-            state.AssignReference(reference, enumerator.Current);
-            if (!successfulEnumeration)
+            if (successfulEnumeration) {
+                state.Push(enumerator.Current);
+            } else {
                 state.Jump(jumpToIfFailure);
+            }
 
             return null;
         }
@@ -387,13 +416,25 @@ namespace OpenDreamRuntime.Procs {
         public static ProcStatus? Initial(DMProcState state) {
             DreamValue key = state.Pop();
             DreamValue owner = state.Pop();
+
+            // number indices always perform a normal list access here
+            if (key.TryGetValueAsInteger(out _)) {
+                PushListGet(state, owner, key);
+                return null;
+            }
+
             if (!key.TryGetValueAsString(out string property)) {
                 throw new Exception("Invalid var for initial() call: " + key);
             }
 
-            DreamObjectDefinition objectDefinition;
             if (owner.TryGetValueAsDreamObject(out DreamObject dreamObject)) {
-                objectDefinition = dreamObject.ObjectDefinition;
+                state.Push(dreamObject.Initial(property));
+                return null;
+            }
+
+            DreamObjectDefinition objectDefinition;
+            if (owner.TryGetValueAsDreamObject(out DreamObject dreamObject2)) {
+                objectDefinition = dreamObject2.ObjectDefinition;
             } else if (owner.TryGetValueAsType(out var ownerType)) {
                 objectDefinition = ownerType.ObjectDefinition;
             } else {
@@ -438,6 +479,13 @@ namespace OpenDreamRuntime.Procs {
             state.Pop();
             return null;
         }
+
+        public static ProcStatus? PopReference(DMProcState state) {
+            DMReference reference = state.ReadReference();
+            state.PopReference(reference);
+            return null;
+        }
+
 
         public static ProcStatus? PushArgumentList(DMProcState state) {
             if (state.Pop().TryGetValueAsDreamList(out var argList)) {
@@ -1251,15 +1299,6 @@ namespace OpenDreamRuntime.Procs {
 
                     break;
                 }
-                case DMReference.Type.Proc: {
-                    DreamValue owner = state.Pop();
-                    if (!owner.TryGetValueAsDreamObject(out instance) || instance == null)
-                        throw new Exception($"Cannot dereference proc \"{procRef.Name}\" from {owner}");
-                    if (!instance.TryGetProc(procRef.Name, out proc))
-                        throw new Exception($"Type {instance.ObjectDefinition.Type} has no proc called \"{procRef.Name}\"");
-
-                    break;
-                }
                 case DMReference.Type.GlobalProc: {
                     instance = null;
                     proc = state.Proc.ObjectTree.Procs[procRef.Index];
@@ -1392,6 +1431,26 @@ namespace OpenDreamRuntime.Procs {
 
             return null;
         }
+        public static ProcStatus? JumpIfNull(DMProcState state) {
+            int position = state.ReadInt();
+
+            if (state.Peek() == DreamValue.Null) {
+                state.Pop();
+                state.Jump(position);
+            }
+
+            return null;
+        }
+
+        public static ProcStatus? JumpIfNullNoPop(DMProcState state) {
+            int position = state.ReadInt();
+
+            if (state.Peek() == DreamValue.Null) {
+                state.Jump(position);
+            }
+
+            return null;
+        }
 
         public static ProcStatus? JumpIfNullDereference(DMProcState state) {
             DMReference reference = state.ReadReference();
@@ -1402,6 +1461,49 @@ namespace OpenDreamRuntime.Procs {
                 state.Jump(position);
             }
 
+            return null;
+        }
+
+        public static ProcStatus? JumpIfTrueReference(DMProcState state) {
+            DMReference reference = state.ReadReference();
+            int position = state.ReadInt();
+
+            var value = state.GetReferenceValue(reference, true);
+
+            if (value.IsTruthy()) {
+                state.PopReference(reference);
+                state.Push(value);
+                state.Jump(position);
+            }
+
+            return null;
+        }
+
+        public static ProcStatus? JumpIfFalseReference(DMProcState state) {
+            DMReference reference = state.ReadReference();
+            int position = state.ReadInt();
+
+            var value = state.GetReferenceValue(reference, true);
+
+            if (!value.IsTruthy()) {
+                state.PopReference(reference);
+                state.Push(value);
+                state.Jump(position);
+            }
+
+            return null;
+        }
+
+        public static ProcStatus? DereferenceField(DMProcState state) {
+            string name = state.ReadString();
+            DreamValue obj = state.Pop();
+
+            if (!obj.TryGetValueAsDreamObject(out var ownerObj) || ownerObj == null)
+                throw new Exception($"Cannot get field \"{name}\" from {obj}");
+            if (!ownerObj.TryGetVariable(name, out var fieldValue))
+                throw new Exception($"Type {obj.Type} has no field called \"{name}\"");
+
+            state.Push(fieldValue);
             return null;
         }
 
@@ -1527,11 +1629,13 @@ namespace OpenDreamRuntime.Procs {
                     // "savefile[A] << B" is the same as "savefile[A] = B"
 
                     state.AssignReference(leftRef, right);
+                    state.Push(DreamValue.Null);
                     return null;
                 }
             }
 
             PerformOutput(state.GetReferenceValue(leftRef), right);
+            state.Push(DreamValue.Null);
             return null;
         }
 
@@ -1896,13 +2000,25 @@ namespace OpenDreamRuntime.Procs {
         public static ProcStatus? IsSaved(DMProcState state) {
             DreamValue key = state.Pop();
             DreamValue owner = state.Pop();
+
+            // number indices always evaluate to false here
+            if (key.TryGetValueAsFloat(out _)) {
+                state.Push(DreamValue.False);
+                return null;
+            }
+
             if (!key.TryGetValueAsString(out string property)) {
                 throw new Exception($"Invalid var for issaved() call: {key}");
             }
 
+            if (owner.TryGetValueAsDreamObject(out DreamObject dreamObject)) {
+                state.Push(dreamObject.IsSaved(property) ? DreamValue.True : DreamValue.False);
+                return null;
+            }
+
             DreamObjectDefinition objectDefinition;
-            if (owner.TryGetValueAsDreamObject(out var dreamObject)) {
-                objectDefinition = dreamObject.ObjectDefinition;
+            if (owner.TryGetValueAsDreamObject(out var dreamObject2)) {
+                objectDefinition = dreamObject2.ObjectDefinition;
             } else if (owner.TryGetValueAsType(out var type)) {
                 objectDefinition = type.ObjectDefinition;
             } else {
@@ -1919,6 +2035,28 @@ namespace OpenDreamRuntime.Procs {
             return null;
         }
 
+
+
+        public static ProcStatus? DereferenceIndex(DMProcState state) {
+            DreamValue index = state.Pop();
+            DreamValue obj = state.Pop();
+            PushListGet(state, obj, index);
+            return null;
+        }
+
+        public static ProcStatus? DereferenceCall(DMProcState state) {
+            string name = state.ReadString();
+            DreamProcArguments arguments = state.PopArguments();
+            DreamValue obj = state.Pop();
+
+            if (!obj.TryGetValueAsDreamObject(out var instance) || instance == null)
+                throw new Exception($"Cannot dereference proc \"{name}\" from {obj}");
+            if (!instance.TryGetProc(name, out var proc))
+                throw new Exception($"Type {instance.ObjectDefinition.Type} has no proc called \"{name}\"");
+
+            state.Call(proc, instance, arguments);
+            return ProcStatus.Called;
+        }
         #endregion Others
 
         #region Helpers
