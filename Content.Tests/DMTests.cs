@@ -119,13 +119,6 @@ namespace Content.Tests
 
             DreamThread.Run("RunTest", async (state) => {
                 if (_objectTree.TryGetGlobalProc("RunTest", out DreamProc proc)) {
-                    if (proc is DMProc {VerbName: "DumpOpcodes"} dmProc) {
-                        ProcDecoder decoder = new ProcDecoder(_objectTree.Strings, dmProc.Bytecode);
-                        foreach (var opcode in decoder.Disassemble()) {
-                            TestContext.WriteLine(ProcDecoder.Format(opcode, type => _objectTree.GetTreeEntry(type).Path.PathString));
-                        }
-                    }
-
                     callTask = state.Call(proc, null, null, new DreamProcArguments(null));
                     result = await callTask;
                     return DreamValue.Null;

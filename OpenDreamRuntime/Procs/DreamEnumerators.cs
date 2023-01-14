@@ -1,7 +1,7 @@
 ﻿using OpenDreamRuntime.Objects;
 
 namespace OpenDreamRuntime.Procs {
-    public interface IDreamValueEnumerator {
+    internal interface IDreamValueEnumerator {
         public DreamValue Current { get; }
 
         public bool MoveNext();
